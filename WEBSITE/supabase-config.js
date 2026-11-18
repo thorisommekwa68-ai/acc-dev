@@ -1,4 +1,4 @@
 window.AQUA_SUPABASE_CONFIG = {
-  url: 'https://YOUR_PROJECT_ID.supabase.co',
-  anonKey: 'YOUR_SUPABASE_ANON_KEY'
+  url: 'https://axxshvoizftbezkxdisv.supabase.co',
+  publishableKey: 'sb_publishable_NyF6_0NZBBZG6ByLe0OVsw_LSFBtVdW'
 };

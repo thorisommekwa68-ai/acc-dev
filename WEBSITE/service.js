@@ -1,11 +1,11 @@
 const config = window.AQUA_SUPABASE_CONFIG;
 const configured = Boolean(
   config?.url &&
-  config?.anonKey &&
+  config?.publishableKey &&
   !config.url.includes('YOUR_PROJECT_ID') &&
-  !config.anonKey.includes('YOUR_SUPABASE_ANON_KEY')
+  !config.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY')
 );
-const supabase = configured ? window.supabase.createClient(config.url, config.anonKey) : null;
+const supabase = configured ? window.supabase.createClient(config.url, config.publishableKey) : null;
 
 function setFormStatus(element, message, type) {
   element.className = `form-status ${type}`;

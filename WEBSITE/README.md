@@ -10,7 +10,7 @@ Website form submissions are stored in Supabase and appear in the BOS CRM enquir
 ## Configure Supabase
 
 1. Create a Supabase project.
-2. In **Project Settings → API**, copy the project URL and the **anon/public** key into `supabase-config.js`. Never put a `service_role` key in this website.
+2. In **Project Settings → API**, copy the project URL and the **publishable** key (or legacy anon/public key) into `supabase-config.js`. Never put a secret or `service_role` key in this website.
 3. Run `supabase/migrations/202611180001_initial_schema.sql` in the Supabase SQL Editor.
 4. Create and confirm the two founder users in **Authentication → Users**:
    - `thorisommekwa68@gmail.com`

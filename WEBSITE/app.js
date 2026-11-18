@@ -177,12 +177,12 @@ const state = loadState();
 const supabaseConfig = window.AQUA_SUPABASE_CONFIG;
 const supabaseConfigured = Boolean(
   supabaseConfig?.url &&
-  supabaseConfig?.anonKey &&
+  supabaseConfig?.publishableKey &&
   !supabaseConfig.url.includes('YOUR_PROJECT_ID') &&
-  !supabaseConfig.anonKey.includes('YOUR_SUPABASE_ANON_KEY')
+  !supabaseConfig.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY')
 );
 const supabaseClient = supabaseConfigured
-  ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+  ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.publishableKey)
   : null;
 const navDefinitions = [
   { key: 'dashboard', label: 'Dashboard', group: 'Overview' },
