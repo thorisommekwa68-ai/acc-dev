@@ -976,6 +976,7 @@ function render() {
   const toggleContextBtn = document.getElementById('toggle-context');
   if (toggleContextBtn) {
     toggleContextBtn.textContent = state.contextVisible ? 'Hide panel' : 'Show panel';
+    toggleContextBtn.setAttribute('aria-expanded', String(state.contextVisible));
   }
   showAppError(state.errorMessage);
 };
