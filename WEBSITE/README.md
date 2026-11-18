@@ -3,7 +3,7 @@
 This static site has two pages that share one Supabase project:
 
 - `index.html` — private founder Business Operating System (BOS)
-- `service.html` — public services page, contact form, and project onboarding form
+- `service.html` — public services page with contact and service-enquiry dialogs
 
 Website form submissions are stored in Supabase and appear in the BOS CRM enquiry list. BOS sign-in and business records use Supabase Auth and PostgreSQL Row Level Security (RLS).
 
