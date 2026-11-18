@@ -185,16 +185,34 @@ const supabaseClient = supabaseConfigured
   ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.publishableKey)
   : null;
 const navDefinitions = [
-  { key: 'dashboard', label: 'Dashboard', group: 'Overview' },
-  { key: 'crm', label: 'CRM / Enquiries', group: 'Business Management' },
-  { key: 'clients', label: 'Clients', group: 'Business Management' },
-  { key: 'projects', label: 'Projects', group: 'Business Management' },
-  { key: 'tasks', label: 'Task Management', group: 'Project Operations' },
-  { key: 'calendar', label: 'Meeting Calendar', group: 'Project Operations' },
-  { key: 'messages', label: 'Messages', group: 'Project Operations' },
+  { key: 'dashboard', label: 'Business Overview', group: 'Command Centre' },
+  { key: 'workspace', label: 'My Workspace', group: 'Command Centre' },
+  { key: 'priorities', label: 'Daily Priorities', group: 'Command Centre' },
+  { key: 'notifications', label: 'Notifications', group: 'Command Centre' },
+  { key: 'crm', label: 'Enquiries', group: 'Business Development' },
+  { key: 'clients', label: 'CRM / Clients', group: 'Business Development' },
+  { key: 'quotations', label: 'Quotations', group: 'Business Development' },
+  { key: 'proposals', label: 'Proposals', group: 'Business Development' },
+  { key: 'projects', label: 'Projects', group: 'Project Operations' },
+  { key: 'tasks', label: 'Tasks', group: 'Project Operations' },
+  { key: 'timelines', label: 'Timelines', group: 'Project Operations' },
+  { key: 'calendar', label: 'Meetings', group: 'Project Operations' },
+  { key: 'files', label: 'Files', group: 'Project Operations' },
+  { key: 'deliverables', label: 'Deliverables', group: 'Project Operations' },
+  { key: 'messages', label: 'Team Messages', group: 'Communication' },
+  { key: 'discussions', label: 'Project Discussions', group: 'Communication' },
+  { key: 'announcements', label: 'Announcements', group: 'Communication' },
+  { key: 'activity', label: 'Activity Feed', group: 'Communication' },
   { key: 'financial', label: 'Financial Overview', group: 'Financial Management' },
-  { key: 'files', label: 'Files & Documents', group: 'Project Operations' },
-  { key: 'settings', label: 'Business Settings', group: 'Administration' }
+  { key: 'revenue', label: 'Revenue', group: 'Financial Management' },
+  { key: 'invoices', label: 'Invoices', group: 'Financial Management' },
+  { key: 'payments', label: 'Payments', group: 'Financial Management' },
+  { key: 'expenses', label: 'Expenses', group: 'Financial Management' },
+  { key: 'team', label: 'Team Management', group: 'Administration' },
+  { key: 'permissions', label: 'Permissions', group: 'Administration' },
+  { key: 'services', label: 'Services', group: 'Administration' },
+  { key: 'settings', label: 'Business Settings', group: 'Administration' },
+  { key: 'system-activity', label: 'System Activity', group: 'Administration' }
 ];
 
 const modalCatalog = {
@@ -278,6 +296,9 @@ function loadState() {
     currentUser: null,
     activeNav: saved.activeNav || 'dashboard',
     contextVisible: Boolean(saved.contextVisible),
+    expandedNavGroup: Object.prototype.hasOwnProperty.call(saved, 'expandedNavGroup')
+      ? saved.expandedNavGroup
+      : undefined,
     enquiries: [],
     clients: [],
     projects: [],
@@ -302,7 +323,8 @@ function loadState() {
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     activeNav: state.activeNav,
-    contextVisible: state.contextVisible
+    contextVisible: state.contextVisible,
+    expandedNavGroup: state.expandedNavGroup
   }));
 }
 
@@ -430,22 +452,50 @@ function renderSidebar() {
     groups[item.group].push(item);
   });
 
-  navContainer.innerHTML = Object.entries(groups).map(([groupLabel, items]) => `
-    <div class="nav-group">
-      <span class="nav-group-title">${groupLabel}</span>
-      ${items.map((item) => `
-        <button class="nav-item ${state.activeNav === item.key ? 'active' : ''}" type="button" data-nav="${item.key}">
-          ${item.label}
+  const activeGroup = navDefinitions.find((item) => item.key === state.activeNav)?.group;
+  const expandedGroup = state.expandedNavGroup === undefined ? activeGroup : state.expandedNavGroup;
+  navContainer.innerHTML = Object.entries(groups).map(([groupLabel, items]) => {
+    const groupId = `nav-items-${groupLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const isExpanded = expandedGroup === groupLabel;
+    return `
+      <section class="nav-group">
+        <button
+          class="nav-group-toggle"
+          type="button"
+          data-nav-group="${groupLabel}"
+          aria-expanded="${isExpanded}"
+          aria-controls="${groupId}"
+        >
+          <span>${groupLabel}</span>
+          <span class="nav-group-chevron" aria-hidden="true">${isExpanded ? '−' : '+'}</span>
         </button>
-      `).join('')}
-    </div>
-  `).join('');
+        <div id="${groupId}" class="nav-group-items ${isExpanded ? '' : 'hidden'}">
+          ${items.map((item) => `
+            <button class="nav-item ${state.activeNav === item.key ? 'active' : ''}" type="button" data-nav="${item.key}">
+              ${item.label}
+            </button>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }).join('');
+
+  navContainer.querySelectorAll('[data-nav-group]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.expandedNavGroup = button.getAttribute('aria-expanded') === 'true'
+        ? ''
+        : button.dataset.navGroup;
+      saveState();
+      renderSidebar();
+    });
+  });
 
   navContainer.querySelectorAll('[data-nav]').forEach((button) => {
     button.addEventListener('click', async () => {
       state.activeNav = button.dataset.nav;
+      state.expandedNavGroup = navDefinitions.find((item) => item.key === state.activeNav)?.group || null;
       saveState();
-      if (state.activeNav === 'crm') {
+      if (state.activeNav === 'crm' || state.activeNav === 'dashboard') {
         try {
           await loadBOSData();
           showAppError();
@@ -483,6 +533,10 @@ function getPageTitle() {
 
 function renderDashboard() {
   const user = getCurrentUser();
+  const firstName = user?.name.split(' ')[0];
+  const myTasks = state.tasks.filter((task) =>
+    task.assignee === firstName && !['completed', 'done'].includes(String(task.status || '').toLowerCase())
+  );
   const rows = [
     { label: 'Accepted project value', value: formatCurrency(state.finances.acceptedProjectValue), delta: 'From projects', tone: 'positive' },
     { label: 'Payments received', value: formatCurrency(state.finances.paymentsReceived), delta: 'Recorded payments', tone: 'positive' },
@@ -536,19 +590,19 @@ function renderDashboard() {
 
       <div class="panel">
         <div class="panel-header">
-          <h3>My tasks today</h3>
-          <span class="muted-label">${state.tasks.length} active</span>
+          <h3>My active tasks</h3>
+          <span class="muted-label">${myTasks.length} assigned</span>
         </div>
         <div class="list-stack">
-          ${state.tasks.map((task) => `
+          ${myTasks.length ? myTasks.map((task) => `
             <div class="list-item">
               <div>
-                <strong>${task.title}</strong>
-                <div class="muted-label">${task.assignee} • ${task.priority}</div>
+                <strong>${escapeHTML(task.title)}</strong>
+                <div class="muted-label">${escapeHTML(task.assignee)} • ${escapeHTML(task.priority)}</div>
               </div>
-              <span class="status-pill status-${task.status.toLowerCase().replace(/\s+/g, '-') || 'progress'}">${task.status}</span>
+              <span class="status-pill status-${escapeHTML(String(task.status || 'progress').toLowerCase().replace(/\s+/g, '-'))}">${escapeHTML(task.status)}</span>
             </div>
-          `).join('')}
+          `).join('') : '<div class="empty-state">No active tasks assigned to you.</div>'}
         </div>
       </div>
     </div>
@@ -590,6 +644,102 @@ function renderDashboard() {
         </div>
       </div>
     </div>
+  `;
+}
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function renderMyWorkspace() {
+  const firstName = getCurrentUser()?.name.split(' ')[0];
+  const myTasks = state.tasks.filter((task) => task.assignee === firstName);
+  const myProjects = state.projects.filter((project) => project.manager === firstName);
+  const myMeetings = state.meetings.filter((meeting) =>
+    (meeting.attendees || []).some((attendee) => attendee === firstName || attendee === getCurrentUser()?.name)
+  );
+  return `
+    <div class="two-col">
+      <section class="panel">
+        <div class="panel-header"><h3>My tasks</h3><span class="muted-label">${myTasks.length} assigned</span></div>
+        ${myTasks.length ? `<div class="list-stack">${myTasks.map((task) => {
+          const status = String(task.status || 'To do');
+          return `
+            <div class="list-item">
+              <div><strong>${escapeHTML(task.title)}</strong><div class="muted-label">Due ${escapeHTML(task.dueDate)}</div></div>
+              <span class="status-pill status-${escapeHTML(status.toLowerCase().replace(/\s+/g, '-'))}">${escapeHTML(status)}</span>
+            </div>
+          `;
+        }).join('')}</div>` : '<div class="empty-state">No tasks are assigned to you yet.</div>'}
+      </section>
+      <section class="panel">
+        <div class="panel-header"><h3>My projects</h3><span class="muted-label">${myProjects.length} active</span></div>
+        ${myProjects.length ? `<div class="list-stack">${myProjects.map((project) => `
+          <div class="list-item">
+            <div><strong>${escapeHTML(project.name)}</strong><div class="muted-label">${escapeHTML(project.client)}</div></div>
+            <span class="status-pill status-progress">${escapeHTML(project.status)}</span>
+          </div>
+        `).join('')}</div>` : '<div class="empty-state">No projects are assigned to you yet.</div>'}
+      </section>
+      <section class="panel">
+        <div class="panel-header"><h3>My upcoming meetings</h3><span class="muted-label">${myMeetings.length} scheduled</span></div>
+        ${myMeetings.length ? `<div class="calendar-list">${myMeetings.map((meeting) => `
+          <div class="calendar-item"><strong>${escapeHTML(meeting.title)}</strong><span class="muted-label">${escapeHTML(meeting.date)} · ${escapeHTML(meeting.time)}</span></div>
+        `).join('')}</div>` : '<div class="empty-state">No upcoming meetings include you.</div>'}
+      </section>
+      <section class="panel">
+        <div class="panel-header"><h3>Team notifications</h3><span class="muted-label">${state.notifications.filter((item) => !item.read).length} unread</span></div>
+        ${state.notifications.length ? `<div class="list-stack">${state.notifications.slice(0, 5).map((item) => `
+          <div class="list-item"><div><strong>${escapeHTML(item.title)}</strong><div class="muted-label">${escapeHTML(item.detail)}</div></div><span class="badge ${item.read ? 'status-archived' : 'status-new'}">${item.read ? 'Read' : 'New'}</span></div>
+        `).join('')}</div>` : '<div class="empty-state">You are all caught up.</div>'}
+      </section>
+    </div>
+  `;
+}
+
+function renderDailyPriorities() {
+  const today = getLocalDateKey();
+  const priorities = state.tasks
+    .filter((task) => !['completed', 'done'].includes(String(task.status || '').toLowerCase()))
+    .filter((task) =>
+      (task.dueDate && task.dueDate <= today) ||
+      ['critical', 'high'].includes(String(task.priority || '').toLowerCase())
+    )
+    .sort((left, right) => String(left.dueDate || '9999-12-31').localeCompare(String(right.dueDate || '9999-12-31')));
+
+  return `
+    <section class="task-panel">
+      <div class="panel-header"><h3>Daily priorities</h3><span class="muted-label">${priorities.length} items need attention</span></div>
+      ${priorities.length ? `<div class="table-wrap"><table class="table">
+        <thead><tr><th>Priority</th><th>Task</th><th>Assignee</th><th>Status</th><th>Due</th></tr></thead>
+        <tbody>${priorities.map((task) => `
+          <tr>
+            <td>${escapeHTML(task.priority)}</td>
+            <td>${escapeHTML(task.title)}</td>
+            <td>${escapeHTML(task.assignee)}</td>
+            <td>${escapeHTML(task.status)}</td>
+            <td>${escapeHTML(task.dueDate || 'Not set')}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table></div>` : '<div class="empty-state">No overdue or high-priority tasks. You are clear for today.</div>'}
+    </section>
+  `;
+}
+
+function renderNotifications() {
+  return `
+    <section class="panel">
+      <div class="panel-header"><h3>Notifications</h3><span class="muted-label">${state.notifications.filter((item) => !item.read).length} unread</span></div>
+      ${state.notifications.length ? `<div class="list-stack">${state.notifications.map((item) => `
+        <div class="list-item">
+          <div><strong>${escapeHTML(item.title)}</strong><div class="muted-label">${escapeHTML(item.detail)}</div></div>
+          <span class="badge ${item.read ? 'status-archived' : 'status-new'}">${item.read ? 'Read' : 'Unread'}</span>
+        </div>
+      `).join('')}</div>` : '<div class="empty-state">No notifications yet.</div>'}
+    </section>
   `;
 }
 
@@ -864,6 +1014,17 @@ function renderSettings() {
   `;
 }
 
+function renderModulePlaceholder() {
+  const currentModule = navDefinitions.find((item) => item.key === state.activeNav);
+  return `
+    <section class="module-placeholder">
+      <p class="eyebrow">${escapeHTML(currentModule?.group || 'Business operations')}</p>
+      <h3>${escapeHTML(currentModule?.label || 'Module')}</h3>
+      <p>This module is being prepared for the BOS redevelopment.</p>
+    </section>
+  `;
+}
+
 function renderContextPanel() {
   const context = document.getElementById('context-content');
   if (!context) return;
@@ -898,6 +1059,9 @@ function renderWorkspace() {
 
   const viewMap = {
     dashboard: renderDashboard,
+    workspace: renderMyWorkspace,
+    priorities: renderDailyPriorities,
+    notifications: renderNotifications,
     crm: renderCRM,
     clients: renderClients,
     projects: renderProjects,
@@ -909,7 +1073,7 @@ function renderWorkspace() {
     settings: renderSettings
   };
 
-  const selectedView = viewMap[state.activeNav] || renderDashboard;
+  const selectedView = viewMap[state.activeNav] || renderModulePlaceholder;
   workspace.innerHTML = selectedView();
 
   document.querySelectorAll('[data-quick-action]').forEach((button) => {

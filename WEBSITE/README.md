@@ -7,6 +7,8 @@ This static site has two pages that share one Supabase project:
 
 Website form submissions are stored in Supabase and appear in the BOS CRM enquiry list. BOS sign-in and business records use Supabase Auth and PostgreSQL Row Level Security (RLS).
 
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the audited baseline data model and integration flows, and [PROJECT_STATUS.md](./PROJECT_STATUS.md) for redevelopment progress.
+
 ## Configure Supabase
 
 1. Create a Supabase project.
