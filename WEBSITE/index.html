@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071b33" />
+    <title>Aqua Capricorn Creatives</title>
+    <link rel="icon" type="image/svg+xml" href="FAVICON.svg" />
+    <link rel="icon" type="image/png" sizes="256x256" href="ICON.png" />
+    <link rel="apple-touch-icon" href="ICON.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div id="auth-screen" class="auth-screen">
+      <div class="auth-shell">
+        <div class="brand-block">
+          <div class="brand-mark">
+            <img src="ICON.png" alt="Aqua Capricorn Creatives icon" class="brand-image" />
+          </div>
+          <div>
+            <div class="eyebrow">AQUA CAPRICORN CREATIVES</div>
+            <h1>Business Operating System</h1>
+          </div>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label>
+            <span>Email</span>
+            <input id="login-email" type="email" placeholder="name@company.co.za" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="login-password" type="password" placeholder="Your secure password" required />
+          </label>
+          <button type="submit" class="primary-btn">Log in</button>
+          <p class="subtle-text">Sign in with an authorized Aqua Capricorn founder account. <a href="service.html">Visit our services page</a>.</p>
+          <div id="auth-message" class="auth-message" aria-live="polite"></div>
+          <p class="subtle-text">Need BOS access? Contact an administrator.</p>
+        </form>
+      </div>
+    </div>
+
+    <div id="app-shell" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="brand-row">
+            <div class="brand-mark small">
+              <img src="ICON.png" alt="Aqua Capricorn Creatives icon" class="brand-image" />
+            </div>
+            <div>
+              <strong>AQUA CAPRICORN CREATIVES</strong>
+              <small>BOS</small>
+            </div>
+          </div>
+        </div>
+
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Main navigation"></nav>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow top-eyebrow">Operations overview</p>
+            <h2 id="page-title">Dashboard</h2>
+          </div>
+          <div class="topbar-actions">
+            <button class="ghost-btn" type="button" id="toggle-context">Toggle panel</button>
+            <button class="primary-btn small-btn" type="button" id="quick-action-launch">Quick action</button>
+            <button class="ghost-btn" type="button" id="logout-btn">Log out</button>
+          </div>
+        </header>
+        <div id="app-message" class="app-message hidden" role="status" aria-live="polite"></div>
+
+        <div id="workspace-content" class="workspace-content"></div>
+      </main>
+
+      <aside id="context-panel" class="context-panel">
+        <div class="panel-header">
+          <h3>Context</h3>
+          <button class="ghost-btn small-btn" type="button" id="collapse-context">Hide</button>
+        </div>
+        <div id="context-content"></div>
+      </aside>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-title">Quick action</h3>
+          <button type="button" class="ghost-btn small-btn" id="close-modal">Close</button>
+        </div>
+        <form id="modal-form"></form>
+      </div>
+    </div>
+  </body>
+</html>
