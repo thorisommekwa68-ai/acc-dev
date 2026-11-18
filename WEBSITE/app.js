@@ -442,9 +442,17 @@ function renderSidebar() {
   `).join('');
 
   navContainer.querySelectorAll('[data-nav]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       state.activeNav = button.dataset.nav;
       saveState();
+      if (state.activeNav === 'crm') {
+        try {
+          await loadBOSData();
+          showAppError();
+        } catch (error) {
+          showAppError(`Could not refresh enquiries: ${error.message}`);
+        }
+      }
       render();
     });
   });
