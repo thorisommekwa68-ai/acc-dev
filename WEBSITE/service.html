@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Aqua Capricorn Creatives helps businesses with website development, business automation, and branding." />
+    <meta name="theme-color" content="#071b33" />
     <title>Aqua Capricorn Creatives | Digital Evolution</title>
+    <link rel="icon" type="image/svg+xml" href="FAVICON.svg" />
+    <link rel="icon" type="image/png" sizes="256x256" href="ICON.png" />
+    <link rel="apple-touch-icon" href="ICON.png" />
     <style>
       :root {
         --navy: #071b33;
@@ -74,6 +78,19 @@
         color: var(--white);
         text-decoration: none;
       }
+      .site-header .brand {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        gap: 8px;
+      }
+      .header-wordmark,
+      .header-symbol {
+        display: block;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+      .header-wordmark { width: 100px; height: 58px; }
+      .header-symbol { width: auto; height: 54px; }
       .brand-mark {
         width: 38px;
         height: 38px;
@@ -524,8 +541,8 @@
       <header class="site-header">
         <div class="container header-inner">
           <a href="#home" class="brand" aria-label="Aqua Capricorn Creatives home">
-            <span class="brand-mark"> <img src="FAVICON.svg" alt=""></span>
-            <span>Aqua Capricorn Creatives</span>
+            <img class="header-wordmark" src="PATTERN%20AND%20LOGO-13.png" alt="" />
+            <img class="header-symbol" src="SVG%20ASSETS-12.svg" alt="" />
           </a>
           <button class="button secondary menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
           <nav id="site-nav" class="nav" aria-label="Main navigation">
