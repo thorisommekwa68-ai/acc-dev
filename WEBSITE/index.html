@@ -46,7 +46,7 @@
     <div id="app-shell" class="app-shell hidden">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="brand-row">
+          <button class="brand-row" type="button" id="brand-dashboard" aria-label="Open dashboard">
             <div class="brand-mark small">
               <img src="ICON.png" alt="Aqua Capricorn Creatives icon" class="brand-image" />
             </div>
@@ -54,7 +54,8 @@
               <strong>AQUA CAPRICORN CREATIVES</strong>
               <small>BOS</small>
             </div>
-          </div>
+          </button>
+          <div id="sidebar-profile" class="sidebar-profile"></div>
         </div>
 
         <nav id="sidebar-nav" class="sidebar-nav" aria-label="Main navigation"></nav>
@@ -67,9 +68,7 @@
             <h2 id="page-title">Dashboard</h2>
           </div>
           <div class="topbar-actions">
-            <button class="primary-btn small-btn" type="button" id="quick-action-launch">Quick action</button>
             <button class="ghost-btn" type="button" id="logout-btn">Log out</button>
-            <button class="ghost-btn" type="button" id="toggle-context" aria-controls="context-panel" aria-expanded="false">Show panel</button>
           </div>
         </header>
         <div id="app-message" class="app-message hidden" role="status" aria-live="polite"></div>

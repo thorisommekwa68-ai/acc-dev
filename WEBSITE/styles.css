@@ -760,6 +760,247 @@ td details p {
   background: rgba(7, 27, 51, 0.02);
 }
 
+.brand-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.brand-row div:last-child {
+  display: grid;
+  line-height: 1.15;
+}
+
+.brand-row small {
+  margin-top: 3px;
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.profile-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.profile-copy {
+  min-width: 0;
+  display: grid;
+}
+
+.profile-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-copy small {
+  color: rgba(255,255,255,0.62);
+  margin-top: 3px;
+}
+
+.nav-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.kpi-button {
+  appearance: none;
+  border: 1px solid var(--line);
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.toolbar input,
+.toolbar select {
+  max-width: 280px;
+}
+
+.view-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 12px;
+  border-radius: 10px;
+  background: rgba(7,27,51,0.05);
+  width: fit-content;
+}
+
+.view-switcher button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.view-switcher button.active {
+  background: var(--white);
+  color: var(--navy);
+  box-shadow: 0 2px 8px rgba(7,27,51,0.08);
+}
+
+.list-button {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-warning {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(217,145,49,0.28);
+  border-radius: 12px;
+  background: rgba(217,145,49,0.08);
+  color: #80521d;
+}
+
+.attention-panel {
+  margin-top: 18px;
+}
+
+.mini-gantt,
+.gantt-full,
+.gantt-timeline {
+  display: grid;
+  gap: 10px;
+  padding: 4px 12px 14px;
+}
+
+.gantt-row,
+.gantt-project {
+  display: grid;
+  grid-template-columns: 140px minmax(100px,1fr) 42px;
+  align-items: center;
+  gap: 10px;
+}
+
+.gantt-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(54,185,200,0.14);
+}
+
+.gantt-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--cyan);
+}
+
+.gantt-track-large {
+  height: 24px;
+  position: relative;
+  background: rgba(7,27,51,0.06);
+  overflow: visible;
+}
+
+.gantt-track-large span {
+  border-radius: 6px;
+}
+
+.gantt-milestone {
+  position: absolute;
+  right: 3px;
+  top: -4px;
+  width: 12px;
+  height: 32px;
+  background: var(--gold);
+  transform: rotate(45deg);
+  border-radius: 3px;
+}
+
+.gantt-project-name {
+  display: grid;
+}
+
+.acceptance-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(54,185,200,0.08);
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+}
+
+.detail-list dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.detail-list dd {
+  margin: 0;
+}
+
+.detail-message {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(7,27,51,0.04);
+  white-space: pre-wrap;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 220px minmax(0, 1fr);
@@ -802,6 +1043,15 @@ td details p {
   .sidebar-nav {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .sidebar-profile {
+    display: none;
+  }
+
+  .nav-item {
+    justify-content: center;
   }
 
   .topbar {
