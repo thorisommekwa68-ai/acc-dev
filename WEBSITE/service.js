@@ -61,7 +61,7 @@ contactForm?.addEventListener('submit', async (event) => {
     }
   }
   contactForm.reset();
-  setFormStatus(contactStatus, 'Your enquiry was saved and forwarded to management.', 'success');
+  setFormStatus(contactStatus, 'Thank you for contacting Aqua Capricorn Creatives. The designers will be in touch with you shortly.', 'success');
   document.getElementById('service-dialog')?.close();
   document.getElementById('submission-confirmation')?.showModal();
 });
