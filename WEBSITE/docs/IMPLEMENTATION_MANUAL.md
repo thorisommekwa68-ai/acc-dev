@@ -10,6 +10,7 @@
 6. Copy the complete migration file and paste it into the editor.
 7. Click **Run**.
 8. Do not run it in production until a staging test has passed.
+9. Run `202611180003_fix_membership_rls_helper.sql` after migration 002. It is safe to run whether migration 002 is newly applied or was already applied.
 
 Confirm the new tables under **Table Editor**. Confirm RLS is enabled on each business-owned table and confirm policies are visible under the table policy view.
 

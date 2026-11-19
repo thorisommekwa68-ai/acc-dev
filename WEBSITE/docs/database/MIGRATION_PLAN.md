@@ -3,11 +3,13 @@
 ## Apply
 
 1. Review `WEBSITE/supabase/migrations/202611180002_bos_relational_redesign.sql`.
-2. Open Supabase Dashboard → SQL Editor.
-3. Paste the complete file and run it once.
-4. Confirm new tables in Table Editor.
-5. Confirm RLS is enabled and policies exist.
-6. Confirm the Aqua business and founder memberships are present.
+2. Take a Supabase backup and verify the migration on a staging project first.
+3. Open Supabase Dashboard → SQL Editor.
+4. Paste the complete file and run it once.
+5. Run `WEBSITE/supabase/migrations/202611180003_fix_membership_rls_helper.sql`.
+6. Confirm new tables in Table Editor.
+7. Confirm RLS is enabled and policies exist.
+8. Confirm the Aqua business and founder memberships are present.
 
 ## Dependencies
 

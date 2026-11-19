@@ -12,167 +12,6 @@ const USERS = [
   }
 ];
 
-const seedState = {
-  currentUser: null,
-  activeNav: 'dashboard',
-  contextVisible: false,
-  enquiries: [
-    {
-      id: 'ENQ-1042',
-      client: 'Nandi Studio',
-      business: 'Nandi Studio',
-      email: 'hello@nandi.co.za',
-      phone: '081 222 3344',
-      industry: 'Beauty and personal care',
-      services: ['Brand refresh', 'Website development'],
-      source: 'Website form',
-      assignedTo: 'Thoriso',
-      status: 'new',
-      date: '2026-11-18'
-    },
-    {
-      id: 'ENQ-1051',
-      client: 'Mango Logistics',
-      business: 'Mango Logistics',
-      email: 'ops@mangologistics.co.za',
-      phone: '071 454 8951',
-      industry: 'Construction and trades',
-      services: ['Workflow automation', 'Order management'],
-      source: 'Referral',
-      assignedTo: 'Rorisang',
-      status: 'qualified',
-      date: '2026-11-14'
-    },
-    {
-      id: 'ENQ-1054',
-      client: 'Beau Bites',
-      business: 'Beau Bites',
-      email: 'hello@beaubites.co.za',
-      phone: '083 370 9204',
-      industry: 'Food and hospitality',
-      services: ['Landing page', 'Brand identity'],
-      source: 'Social media',
-      assignedTo: 'Thoriso',
-      status: 'reviewing',
-      date: '2026-11-10'
-    }
-  ],
-  clients: [
-    {
-      id: 'CL-201',
-      businessName: 'Nandi Studio',
-      contactPerson: 'Nandi Mokoena',
-      email: 'hello@nandi.co.za',
-      phone: '081 222 3344',
-      location: 'Cape Town',
-      industry: 'Beauty and personal care',
-      website: 'https://nandi-studio.co.za',
-      notes: 'Luxury beauty brand repositioning.'
-    },
-    {
-      id: 'CL-204',
-      businessName: 'Mango Logistics',
-      contactPerson: 'Adebayo Mokoena',
-      email: 'ops@mangologistics.co.za',
-      phone: '071 454 8951',
-      location: 'Johannesburg',
-      industry: 'Construction and trades',
-      website: 'https://mangologistics.co.za',
-      notes: 'Operational systems upgrade.'
-    }
-  ],
-  projects: [
-    {
-      id: 'PRJ-210',
-      name: 'Nandi Studio rebrand',
-      client: 'Nandi Studio',
-      status: 'In progress',
-      progress: 68,
-      manager: 'Thoriso',
-      value: 42000,
-      dueDate: '2026-12-14'
-    },
-    {
-      id: 'PRJ-214',
-      name: 'Mango workflows',
-      client: 'Mango Logistics',
-      status: 'Under review',
-      progress: 82,
-      manager: 'Rorisang',
-      value: 56000,
-      dueDate: '2026-12-03'
-    },
-    {
-      id: 'PRJ-218',
-      name: 'Beau Bites launch site',
-      client: 'Beau Bites',
-      status: 'Planning',
-      progress: 33,
-      manager: 'Thoriso',
-      value: 26000,
-      dueDate: '2027-01-10'
-    }
-  ],
-  tasks: [
-    {
-      id: 'TSK-331',
-      title: 'Finalise Nandi brand deck',
-      projectId: 'PRJ-210',
-      assignee: 'Thoriso',
-      priority: 'High',
-      status: 'In progress',
-      dueDate: '2026-11-20'
-    },
-    {
-      id: 'TSK-336',
-      title: 'Integrate customer enquiry pipeline',
-      projectId: 'PRJ-214',
-      assignee: 'Rorisang',
-      priority: 'Critical',
-      status: 'Blocked',
-      dueDate: '2026-11-19'
-    },
-    {
-      id: 'TSK-339',
-      title: 'Prepare Beau Bites homepage wireframe',
-      projectId: 'PRJ-218',
-      assignee: 'Thoriso',
-      priority: 'Normal',
-      status: 'To do',
-      dueDate: '2026-11-25'
-    }
-  ],
-  meetings: [
-    { id: 'MTG-11', title: 'Brand review', date: '2026-11-20', time: '10:00', attendees: ['Thoriso', 'Rorisang'] },
-    { id: 'MTG-12', title: 'Client discovery session', date: '2026-11-22', time: '14:00', attendees: ['Thoriso', 'Rorisang', 'Nandi Studio'] },
-    { id: 'MTG-13', title: 'Technical implementation check-in', date: '2026-11-24', time: '09:30', attendees: ['Rorisang'] }
-  ],
-  messages: [
-    { user: 'Thoriso', text: 'Brand directions are ready for the customer review.', time: '09:15' },
-    { user: 'Rorisang', text: 'The database schema for the enquiry pipeline is aligned.', time: '09:48' },
-    { user: 'Thoriso', text: 'Let us schedule the design approvals for tomorrow morning.', time: '10:06' }
-  ],
-  notifications: [
-    { title: 'New enquiry', detail: 'Nandi Studio enquiry received', read: false },
-    { title: 'Task reassigned', detail: 'Customer enquiry pipeline moved to Rorisang', read: true },
-    { title: 'Project milestone', detail: 'Nandi Studio rebrand moved to 68%', read: false }
-  ],
-  documents: [
-    { name: 'Nandi Brand Brief.pdf', type: 'Project', owner: 'Thoriso', date: '2026-11-15' },
-    { name: 'Tech Architecture Review.md', type: 'Technical', owner: 'Rorisang', date: '2026-11-12' },
-    { name: 'Mango Invoice Q4.pdf', type: 'Finance', owner: 'Rorisang', date: '2026-11-11' }
-  ],
-  finances: {
-    acceptedProjectValue: 126000,
-    paymentsReceived: 84000,
-    outstandingBalances: 42000,
-    pendingQuotations: 18000,
-    invoicesIssued: 98000,
-    expenses: 24000,
-    netCashPosition: 60000
-  }
-};
-
 const state = loadState();
 const supabaseConfig = window.AQUA_SUPABASE_CONFIG;
 const supabaseConfigured = Boolean(
@@ -190,6 +29,9 @@ const navDefinitions = [
   { key: 'clients', label: 'Clients', icon: 'users', group: 'Operational navigation' },
   { key: 'finances', label: 'Finances', icon: 'wallet', group: 'Operational navigation' }
 ];
+if (!navDefinitions.some((item) => item.key === state.activeNav)) {
+  state.activeNav = 'inquiries';
+}
 
 const modalCatalog = {
   'create-project': {
@@ -1240,26 +1082,25 @@ function bindTableFilters() {
 function renderContextPanel() {
   const context = document.getElementById('context-content');
   if (!context) return;
+  const recentActivity = state.enquiries.slice(0, 3);
 
   context.innerHTML = `
     <div class="context-box">
       <h4>Upcoming meetings</h4>
       <ul>
-        ${state.meetings.slice(0, 3).map((m) => `<li>${m.title} — ${m.date}</li>`).join('')}
+        ${state.meetings.slice(0, 3).map((meeting) => `<li>${escapeHTML(meeting.title)} — ${escapeHTML(meeting.date)}</li>`).join('') || '<li>No upcoming meetings.</li>'}
       </ul>
     </div>
     <div class="context-box">
       <h4>Today’s deadlines</h4>
       <ul>
-        ${state.tasks.slice(0, 3).map((task) => `<li>${task.title} — ${task.dueDate}</li>`).join('')}
+        ${state.tasks.slice(0, 3).map((task) => `<li>${escapeHTML(task.title)} — ${escapeHTML(task.dueDate)}</li>`).join('') || '<li>No task deadlines.</li>'}
       </ul>
     </div>
     <div class="context-box">
       <h4>Recent activity</h4>
       <ul>
-        <li>New enquiry received from Nandi Studio.</li>
-        <li>Project value updated for Mango Logistics.</li>
-        <li>Brand deck reviewed by founder team.</li>
+        ${recentActivity.map((item) => `<li>New enquiry received from ${escapeHTML(item.client || item.contactName || 'a client')}.</li>`).join('') || '<li>No recent activity yet.</li>'}
       </ul>
     </div>
   `;

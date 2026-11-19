@@ -13,12 +13,13 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the audited baseline data model and
 
 1. Create a Supabase project.
 2. In **Project Settings → API**, copy the project URL and the **publishable** key (or legacy anon/public key) into `supabase-config.js`. Never put a secret or `service_role` key in this website.
-3. Run `supabase/migrations/202611180001_initial_schema.sql` in the Supabase SQL Editor.
-4. Create and confirm the two founder users in **Authentication → Users**:
+3. If this project has not yet been initialized, run `supabase/migrations/202611180001_initial_schema.sql`.
+4. To enable the current relational BOS workflows, first test and then run `supabase/migrations/202611180002_bos_relational_redesign.sql`, followed by `supabase/migrations/202611180003_fix_membership_rls_helper.sql`. These migrations preserve the existing intake and legacy BOS tables; do not run against production without review and a backup.
+5. Create and confirm the two founder users in **Authentication → Users**:
    - `thorisommekwa68@gmail.com`
    - `dkdrougs@gmail.com`
-5. Disable public sign-ups in the Supabase Auth provider settings; create BOS users manually.
-6. In **Authentication → URL Configuration**, set the production site URL and add the Cloudflare Pages domain (and any custom domain) to the allowed redirect URLs.
+6. Disable public sign-ups in the Supabase Auth provider settings; create BOS users manually.
+7. In **Authentication → URL Configuration**, set the production site URL and add the Cloudflare Pages domain (and any custom domain) to the allowed redirect URLs.
 
 The migration allows anyone to submit a service enquiry but restricts enquiry reads and BOS data to the two founder email addresses above. Do not remove the RLS policies or expose a service-role key.
 

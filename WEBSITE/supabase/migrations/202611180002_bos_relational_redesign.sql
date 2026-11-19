@@ -349,7 +349,7 @@ create or replace function public.is_active_business_member(p_business_id uuid)
 returns boolean
 language sql
 stable
-security invoker
+security definer
 set search_path = pg_catalog, public
 as $$
   select exists (
@@ -360,6 +360,8 @@ as $$
       and bm.status = 'active'
   );
 $$;
+revoke all on function public.is_active_business_member(uuid) from public, anon;
+grant execute on function public.is_active_business_member(uuid) to authenticated;
 
 create or replace function public.has_business_permission(p_business_id uuid, p_permission text)
 returns boolean

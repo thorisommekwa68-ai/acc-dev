@@ -24,7 +24,7 @@ The in-memory BOS state currently contains:
 - `documents`: `{ name, type, owner, date }`.
 - `finances`: summary values for accepted project value, payments received, outstanding balances, pending quotations, invoices issued, expenses, and net cash position.
 
-`seedState` still contains example records, but `loadState()` does not use it. It returns empty business collections and zero-valued finance summaries instead.
+There is no longer a mock `seedState`; the active dashboard is backed by Supabase data, with a legacy record fallback for installations where the additive relational migration has not yet been applied.
 
 ## Supabase schema and access
 
