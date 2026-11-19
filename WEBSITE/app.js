@@ -357,6 +357,18 @@ async function loadBOSData() {
   state.loading = false;
 }
 
+async function refreshBOSData() {
+  if (!getCurrentUser()) return;
+  try {
+    await loadBOSData();
+    showAppError();
+  } catch (error) {
+    state.loading = false;
+    showAppError(`Could not refresh BOS data: ${error.message}`);
+  }
+  render();
+}
+
 async function addBOSRecord(recordType, data) {
   const { error } = await supabaseClient
     .from('bos_records')
@@ -435,12 +447,8 @@ function renderSidebar() {
       state.expandedNavGroup = navDefinitions.find((item) => item.key === state.activeNav)?.group || null;
       saveState();
       if (state.activeNav === 'inquiries' || state.activeNav === 'dashboard') {
-        try {
-          await loadBOSData();
-          showAppError();
-        } catch (error) {
-          showAppError(`Could not refresh enquiries: ${error.message}`);
-        }
+        await refreshBOSData();
+        return;
       }
       render();
     });
@@ -695,7 +703,10 @@ function renderCRM() {
     <div class="table-panel">
       <div class="panel-header">
         <h3>Inquiries</h3>
-        <button class="primary-btn small-btn" type="button" data-quick-action="create-inquiry">Add inquiry</button>
+        <div class="topbar-actions">
+          <button class="ghost-btn small-btn" type="button" data-refresh-bos>Refresh</button>
+          <button class="primary-btn small-btn" type="button" data-quick-action="create-inquiry">Add inquiry</button>
+        </div>
       </div>
       <div class="toolbar">
         <input id="inquiry-search" type="search" placeholder="Search name, email, service or reference" />
@@ -1126,6 +1137,8 @@ function renderWorkspace() {
       openModal(button.dataset.quickAction);
     });
   });
+
+  document.querySelector('[data-refresh-bos]')?.addEventListener('click', refreshBOSData);
 
   document.querySelectorAll('[data-view-client]').forEach((link) => {
     link.addEventListener('click', () => {
@@ -1703,6 +1716,17 @@ function bindGlobalActions() {
 
 bindGlobalActions();
 render();
+
+let lastFocusRefresh = 0;
+function refreshBOSWhenVisible() {
+  if (document.visibilityState === 'hidden' || !getCurrentUser()) return;
+  if (Date.now() - lastFocusRefresh < 3000) return;
+  lastFocusRefresh = Date.now();
+  refreshBOSData();
+}
+
+window.addEventListener('focus', refreshBOSWhenVisible);
+document.addEventListener('visibilitychange', refreshBOSWhenVisible);
 
 async function initializeAuth() {
   if (!supabaseClient) {
