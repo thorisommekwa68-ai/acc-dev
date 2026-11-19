@@ -65,3 +65,5 @@ contactForm?.addEventListener('submit', async (event) => {
   document.getElementById('service-dialog')?.close();
   document.getElementById('submission-confirmation')?.showModal();
 });
+
+if (contactForm) contactForm.dataset.submitHandlerReady = 'true';

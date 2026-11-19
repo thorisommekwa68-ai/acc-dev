@@ -833,6 +833,19 @@
     <script src="supabase-config.js"></script>
     <script src="service.js"></script>
     <script>
+      const enquiryFormStartupCheck = document.getElementById('contact-form');
+      if (enquiryFormStartupCheck && enquiryFormStartupCheck.dataset.submitHandlerReady !== 'true') {
+        enquiryFormStartupCheck.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const enquiryStatusFallback = document.getElementById('contact-status');
+          if (!enquiryStatusFallback) return;
+          enquiryStatusFallback.className = 'form-status error';
+          enquiryStatusFallback.textContent = 'The enquiry form could not start because its connection script did not load. Please reload the page and try again.';
+          enquiryStatusFallback.scrollIntoView({ block: 'nearest' });
+        }, { capture: true });
+      }
+    </script>
+    <script>
       const navToggle = document.querySelector('.menu-toggle');
       const nav = document.getElementById('site-nav');
       if (navToggle && nav) {
