@@ -6,9 +6,16 @@ const configured = Boolean(
   !config.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY')
 );
 const supabaseSDKAvailable = typeof window.supabase?.createClient === 'function';
-const supabase = configured && supabaseSDKAvailable
-  ? window.supabase.createClient(config.url, config.publishableKey)
-  : null;
+let supabase = null;
+let supabaseInitializationError = '';
+if (configured && supabaseSDKAvailable) {
+  try {
+    supabase = window.supabase.createClient(config.url, config.publishableKey);
+  } catch (error) {
+    supabaseInitializationError = error?.message || 'Could not initialize the Supabase client.';
+    console.error('Could not initialize the Supabase client:', error);
+  }
+}
 
 function setFormStatus(element, message, type) {
   element.className = `form-status ${type}`;
@@ -28,7 +35,9 @@ contactForm?.addEventListener('submit', async (event) => {
   if (!supabase) {
     const message = !configured
       ? 'This form is not connected. Please contact us by email.'
-      : 'The secure form service could not be loaded. Please refresh the page or contact us by email.';
+      : supabaseInitializationError
+        ? `The database connection could not start: ${supabaseInitializationError}`
+        : 'The secure form service could not be loaded. Please refresh the page or contact us by email.';
     setFormStatus(contactStatus, message, 'error');
     return;
   }
