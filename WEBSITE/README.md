@@ -23,6 +23,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the audited baseline data model and
 
 The migration allows anyone to submit a service enquiry but restricts enquiry reads and BOS data to the two founder email addresses above. Do not remove the RLS policies or expose a service-role key.
 
+If a public enquiry does not appear in Supabase, confirm migration `202611180001_initial_schema.sql` has been run and that the form displays its success confirmation. A failed insert displays the Supabase error in the form instead; migration `202611180003_fix_membership_rls_helper.sql` does not create or grant access to `intake_requests`.
+
 ## Deploy with Cloudflare Pages
 
 Create a Pages project connected to this GitHub repository and use:
@@ -31,7 +33,7 @@ Create a Pages project connected to this GitHub repository and use:
 - Build command: leave empty
 - Build output directory: `WEBSITE`
 
-The two pages will then be available at `https://<your-domain>/` and `https://<your-domain>/service.html`. For local testing, serve the repository's `WEBSITE` directory with a static web server; opening the HTML files directly (`file://`) is not supported by Supabase Auth.
+The BOS and services page will then be available at `https://<your-domain>/` and `https://<your-domain>/service.html`. The legacy `/services.html` path redirects to `/service.html`. For local testing, serve the repository's `WEBSITE` directory with a static web server; opening the HTML files directly (`file://`) is not supported by Supabase Auth.
 
 ## Data notes
 

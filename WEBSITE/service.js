@@ -5,7 +5,10 @@ const configured = Boolean(
   !config.url.includes('YOUR_PROJECT_ID') &&
   !config.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY')
 );
-const supabase = configured ? window.supabase.createClient(config.url, config.publishableKey) : null;
+const supabaseSDKAvailable = typeof window.supabase?.createClient === 'function';
+const supabase = configured && supabaseSDKAvailable
+  ? window.supabase.createClient(config.url, config.publishableKey)
+  : null;
 
 function setFormStatus(element, message, type) {
   element.className = `form-status ${type}`;
@@ -23,14 +26,19 @@ contactForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!contactForm.reportValidity()) return;
   if (!supabase) {
-    setFormStatus(contactStatus, 'This form is not connected yet. Please contact us by email.', 'error');
+    const message = !configured
+      ? 'This form is not connected. Please contact us by email.'
+      : 'The secure form service could not be loaded. Please refresh the page or contact us by email.';
+    setFormStatus(contactStatus, message, 'error');
     return;
   }
 
   const values = formValues(contactForm);
   const button = document.getElementById('contact-submit');
-  button.disabled = true;
-  button.textContent = 'Sending…';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Sending…';
+  }
   setFormStatus(contactStatus, 'Sending your message…', 'info');
   try {
     const { error } = await supabase.from('intake_requests').insert({
@@ -42,12 +50,18 @@ contactForm?.addEventListener('submit', async (event) => {
       message: values.message.trim()
     });
     if (error) throw error;
-    contactForm.reset();
-    setFormStatus(contactStatus, 'Thank you. Your message has been sent to Aqua Capricorn Creatives.', 'success');
   } catch (error) {
-    setFormStatus(contactStatus, `We could not send your message: ${error.message}`, 'error');
+    const reason = error?.message || 'An unexpected database error occurred.';
+    setFormStatus(contactStatus, `We could not send your message: ${reason}`, 'error');
+    return;
   } finally {
-    button.disabled = false;
-    button.textContent = 'Send Message';
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Send Message';
+    }
   }
+  contactForm.reset();
+  setFormStatus(contactStatus, 'Your enquiry was saved and forwarded to management.', 'success');
+  document.getElementById('service-dialog')?.close();
+  document.getElementById('submission-confirmation')?.showModal();
 });
