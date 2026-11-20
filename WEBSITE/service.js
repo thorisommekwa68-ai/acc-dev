@@ -29,6 +29,8 @@ function formValues(form) {
 
 const contactForm = document.getElementById('contact-form');
 const contactStatus = document.getElementById('contact-status');
+const submitButton = document.getElementById('contact-submit');
+if (submitButton) submitButton.disabled = false;
 contactForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!contactForm.reportValidity()) return;
