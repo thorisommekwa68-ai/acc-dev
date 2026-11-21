@@ -4,19 +4,6 @@ const configured = Boolean(
   config?.publishableKey
 );
 
-const supabaseSDKAvailable = typeof window.supabase?.createClient === 'function';
-let supabase = null;
-let supabaseInitializationError = '';
-
-if (configured && supabaseSDKAvailable) {
-  try {
-    supabase = window.supabase.createClient(config.url, config.publishableKey);
-  } catch (error) {
-    supabaseInitializationError = error?.message || 'Could not initialize the Supabase client.';
-    console.error('Supabase init error:', error);
-  }
-}
-
 function setFormStatus(element, message, type) {
   if (!element) return;
   element.className = `form-status ${type}`;
@@ -34,7 +21,7 @@ function formatDatabaseError(error) {
   return parts.join(' — ');
 }
 
-async function insertViaRestFallback(payload) {
+async function insertIntakeRequest(payload) {
   const response = await fetch(`${config.url}/rest/v1/intake_requests`, {
     method: 'POST',
     headers: {
@@ -93,13 +80,7 @@ contactForm?.addEventListener('submit', async (event) => {
   setFormStatus(contactStatus, 'Sending your message…', 'info');
 
   try {
-    if (supabase) {
-      const { error } = await supabase.from('intake_requests').insert(payload);
-      if (error) throw error;
-    } else {
-      console.warn('Supabase SDK unavailable, using REST fallback:', supabaseInitializationError);
-      await insertViaRestFallback(payload);
-    }
+    await insertIntakeRequest(payload);
   } catch (error) {
     console.error('Form submission failed:', error);
     setFormStatus(contactStatus, `We could not send your message: ${formatDatabaseError(error)}`, 'error');
