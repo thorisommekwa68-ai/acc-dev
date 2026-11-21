@@ -2,7 +2,7 @@ const config = window.AQUA_SUPABASE_CONFIG;
 const configured = Boolean(
   config?.url &&
   config?.publishableKey &&
-  !config.url.includes('https://axxshvoizftbezkxdisv.supabase.co') &&
+  !config.url.includes('axxshvoizftbezkxdisv') &&
   !config.publishableKey.includes('sb_publishable_NyF6_0NZBBZG6ByLe0OVsw_LSFBtVdW')
 );
 
