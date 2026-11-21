@@ -157,6 +157,14 @@ function loadState() {
     invoices: [],
     payments: [],
     expenses: [],
+    assignments: [],
+    progressHistory: [],
+    profiles: [],
+    selectedProjectId: null,
+    selectedTaskId: null,
+    ganttScale: 'monthly',
+    ganttVisibleStart: null,
+    ganttVisibleEnd: null,
     relationTablesAvailable: false,
     migrationRequired: false,
     loading: false,
@@ -256,10 +264,17 @@ async function loadBOSData() {
     supabaseClient.from('clients').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('invoices').select('*').order('issue_date', { ascending: false }),
     supabaseClient.from('payments').select('*').order('payment_date', { ascending: false }),
-    supabaseClient.from('expenses').select('*').order('expense_date', { ascending: false })
+    supabaseClient.from('expenses').select('*').order('expense_date', { ascending: false }),
+    supabaseClient.from('task_assignments').select('*'),
+    supabaseClient.from('task_progress_history').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('profiles').select('*'),
+    supabaseClient.from('meeting_attendees').select('*')
   ]);
 
-  state.relationTablesAvailable = relationalQueries.every((result) => result.status === 'fulfilled' && !result.value.error);
+  const coreQueries = relationalQueries.slice(0, 9);
+  const enhancementQueries = relationalQueries.slice(9);
+  state.relationTablesAvailable = coreQueries.every((result) => result.status === 'fulfilled' && !result.value.error);
+  state.projectEnhancementsAvailable = enhancementQueries.every((result) => result.status === 'fulfilled' && !result.value.error);
   state.migrationRequired = !state.relationTablesAvailable;
 
   if (state.relationTablesAvailable) {
@@ -300,20 +315,33 @@ async function loadBOSData() {
       dueDate: item.deadline,
       startDate: item.start_date,
       notes: item.notes,
-      currency: item.currency
+      currency: item.currency,
+      actualCompletionDate: item.actual_completion_date || null
     }));
+    if (state.projectEnhancementsAvailable) {
+      const [, , , , , , , , , relAssignments, relHistory, relProfiles, relMeetingAttendees] = relationalQueries.map((result) => result.value?.data || []);
+      state.assignments = relAssignments || [];
+      state.progressHistory = relHistory || [];
+      state.profiles = relProfiles || [];
+      state.meetingAttendees = relMeetingAttendees || [];
+    }
     state.stages = relStages;
     state.tasks = relTasks.map((item) => ({
       id: item.id,
       title: item.title,
       projectId: item.project_id,
+      stageId: item.stage_id,
+      assigneeId: item.assignee_id,
       assignee: item.assignee_id ? 'Assigned user' : 'Unassigned',
       priority: item.priority,
-      status: item.status,
+      status: item.progress >= 100 ? 'Completed' : item.status,
       dueDate: item.due_date,
       startDate: item.start_date,
       description: item.description,
-      notes: item.notes
+      notes: item.notes,
+      weight: Number(item.weight || 0),
+      progress: Number(item.progress || 0),
+      position: Number(item.position || 0)
     }));
     state.meetings = relMeetings.map((item) => {
       const localStart = toLocalDateTimeInputValue(item.start_at);
@@ -576,7 +604,7 @@ function renderDashboard() {
             `).join('') : '<div class="empty-state">No tasks are scheduled for today.</div>'}
           </div>
         </div>
-        <div id="dashboard-gantt" class="hidden">${renderMiniGantt()}</div>
+        <div id="dashboard-gantt" class="hidden">${renderFullGantt()}</div>
       </section>
     </div>
 
@@ -589,41 +617,94 @@ function renderDashboard() {
   `;
 }
 
-function renderMiniGantt() {
-  const activeProjects = state.projects
-    .filter((project) => !['Completed', 'Cancelled'].includes(project.status))
-    .slice(0, 6);
-  if (!activeProjects.length) return '<div class="empty-state">No active project timelines.</div>';
-  return `
-    <div class="mini-gantt" aria-label="Project Gantt overview">
-      ${activeProjects.map((project) => `
-        <div class="gantt-row">
-          <strong>${escapeHTML(project.name)}</strong>
-          <div class="gantt-track"><span style="width:${Math.min(100, Math.max(4, Number(project.progress || 0)))}%"></span></div>
-          <span class="muted-label">${Number(project.progress || 0)}%</span>
-        </div>
-      `).join('')}
-    </div>
-  `;
+function parseDateValue(value) {
+  if (!value) return null;
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function renderFullGantt() {
-  const projects = state.projects.slice(0, 12);
+function getGanttRange(projects = state.projects) {
+  const dates = projects.flatMap((project) => [parseDateValue(project.startDate), parseDateValue(project.dueDate)])
+    .concat(state.tasks.flatMap((task) => [parseDateValue(task.startDate), parseDateValue(task.dueDate)]))
+    .filter(Boolean);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let start = dates.length ? new Date(Math.min(...dates.map((date) => date.getTime()))) : new Date(today);
+  let end = dates.length ? new Date(Math.max(...dates.map((date) => date.getTime()))) : new Date(today);
+  start.setDate(start.getDate() - 7); end.setDate(end.getDate() + 14);
+  if (end <= start) end = new Date(start.getTime() + 30 * 86400000);
+  return { start, end };
+}
+
+function ganttPosition(startValue, endValue, range) {
+  const start = parseDateValue(startValue) || range.start;
+  const end = parseDateValue(endValue) || start;
+  const duration = Math.max(1, range.end - range.start);
+  const left = Math.max(0, Math.min(100, ((start - range.start) / duration) * 100));
+  const rawWidth = ((end - start) / duration) * 100;
+  return { left, width: Math.max(1.2, Math.min(100 - left, rawWidth || 1.2)) };
+}
+
+function calculateProjectProgress(projectId) {
+  const projectStages = state.stages.filter((stage) => String(stage.project_id) === String(projectId) && stage.active !== false);
+  if (!projectStages.length) return 0;
+  const stageWeightTotal = projectStages.reduce((sum, stage) => sum + Number(stage.weight || 0), 0);
+  if (Math.abs(stageWeightTotal - 100) > 0.01) return 0;
+  let total = 0;
+  projectStages.forEach((stage) => {
+    const tasks = state.tasks.filter((task) => String(task.stageId) === String(stage.id));
+    const taskWeightTotal = tasks.reduce((sum, task) => sum + Number(task.weight || 0), 0);
+    const stageProgress = tasks.length && Math.abs(taskWeightTotal - 100) <= 0.01
+      ? tasks.reduce((sum, task) => sum + Number(task.weight || 0) * Number(task.progress || 0) / 100, 0)
+      : 0;
+    total += Number(stage.weight || 0) * stageProgress / 100;
+  });
+  return Math.round(total * 100) / 100;
+}
+
+function renderFullGantt(projectId = null) {
+  const projects = projectId ? state.projects.filter((project) => String(project.id) === String(projectId)) : state.projects;
   if (!projects.length) return '<div class="empty-state">No project timelines configured.</div>';
+  const range = getGanttRange(projects);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const currentPosition = ((today - range.start) / (range.end - range.start)) * 100;
+
   return `
-    <div class="gantt-timeline" role="table" aria-label="Project Gantt chart">
-      ${projects.map((project) => `
-        <div class="gantt-project" role="row">
-          <div class="gantt-project-name"><strong>${escapeHTML(project.name)}</strong><span class="muted-label">${escapeHTML(project.dueDate || 'No deadline')}</span></div>
-          <div class="gantt-track gantt-track-large">
-            <span style="width:${Math.min(100, Math.max(4, Number(project.progress || 0)))}%" title="${Number(project.progress || 0)}% complete"></span>
-            ${project.dueDate ? '<i class="gantt-milestone" title="Project deadline"></i>' : ''}
-          </div>
-          <span class="muted-label">${Number(project.progress || 0)}%</span>
-        </div>
-      `).join('')}
+    <div class="gantt-toolbar">
+      <div class="gantt-view-title">${projectId ? 'Project timeline' : 'Organisation master timeline'}</div>
+      <div class="gantt-scale" aria-label="Timeline scale">
+        ${['daily','weekly','monthly'].map((item) => `<button type="button" class="${state.ganttScale === item ? 'active' : ''}" data-gantt-scale="${item}">${item[0].toUpperCase() + item.slice(1)}</button>`).join('')}
+      </div>
     </div>
-  `;
+    <div class="gantt-scroll">
+      <div class="gantt-canvas" aria-label="Date-positioned Gantt chart">
+        <div class="gantt-header"><span>Project / task</span><span>${escapeHTML(range.start.toLocaleDateString('en-ZA'))} – ${escapeHTML(range.end.toLocaleDateString('en-ZA'))}</span></div>
+        ${projects.map((project) => {
+          const projectTasks = state.tasks.filter((task) => String(task.projectId) === String(project.id));
+          const projectPosition = ganttPosition(project.startDate, project.dueDate, range);
+          const progress = calculateProjectProgress(project.id);
+          return `
+            <div class="gantt-project-row">
+              <button type="button" class="gantt-project-label" data-open-project="${escapeHTML(project.id)}"><strong>${escapeHTML(project.name)}</strong><small>${escapeHTML(project.status)} · ${progress}%</small></button>
+              <div class="gantt-track gantt-track-large" title="${escapeHTML(project.name)}: ${progress}% complete">
+                ${currentPosition >= 0 && currentPosition <= 100 ? `<span class="gantt-now" style="left:${currentPosition}%"></span>` : ''}
+                <button type="button" class="gantt-bar gantt-project-bar ${String(project.status).toLowerCase() === 'completed' ? 'complete' : project.dueDate && project.dueDate < getLocalDateKey() ? 'overdue' : 'active'}" data-open-project="${escapeHTML(project.id)}" style="left:${projectPosition.left}%;width:${projectPosition.width}%" title="${escapeHTML(project.name)} · ${escapeHTML(project.startDate || 'No start')} to ${escapeHTML(project.dueDate || 'No deadline')} · ${progress}%"><span style="width:${progress}%"></span></button>
+              </div>
+            </div>
+            ${projectTasks.map((task) => {
+              const taskPosition = ganttPosition(task.startDate, task.dueDate, range);
+              const overdue = task.status !== 'Completed' && task.dueDate && task.dueDate < getLocalDateKey();
+              return `<div class="gantt-task-row ${state.selectedTaskId === task.id ? 'selected' : ''}">
+                <button type="button" class="gantt-task-label" data-open-task="${escapeHTML(task.id)}" data-project-id="${escapeHTML(project.id)}"><span>${escapeHTML(task.title)}</span><small>${task.progress}% · ${escapeHTML(task.assignee)}</small></button>
+                <div class="gantt-track gantt-task-track">
+                  ${currentPosition >= 0 && currentPosition <= 100 ? `<span class="gantt-now" style="left:${currentPosition}%"></span>` : ''}
+                  <button type="button" class="gantt-bar gantt-task-bar ${task.status === 'Completed' ? 'complete' : overdue ? 'overdue' : 'active'}" data-open-task="${escapeHTML(task.id)}" data-project-id="${escapeHTML(project.id)}" style="left:${taskPosition.left}%;width:${taskPosition.width}%" title="${escapeHTML(task.title)} · ${escapeHTML(task.startDate || 'No start')} to ${escapeHTML(task.dueDate || 'No deadline')} · ${task.progress}%"><span style="width:${task.progress}%"></span></button>
+                </div>
+              </div>`;
+            }).join('')}
+          `;
+        }).join('')}
+      </div>
+    </div>`;
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -857,11 +938,11 @@ function renderProjects() {
           ${['Planning','Active','On hold','Completed','Cancelled','Overdue'].map((status)=>`<option>${status}</option>`).join('')}
         </select>
         <div class="view-switcher">
-          <button class="active" type="button" data-project-view="list">List</button>
-          <button type="button" data-project-view="gantt">Gantt</button>
+          <button type="button" data-project-view="list">List</button>
+          <button class="active" type="button" data-project-view="gantt">Gantt</button>
         </div>
       </div>
-      <div id="project-list-view">
+      <div id="project-list-view" class="hidden">
       <div class="table-wrap">
         <table class="table">
           <thead>
@@ -896,7 +977,7 @@ function renderProjects() {
         </table>
       </div>
       </div>
-      <div id="project-gantt-view" class="hidden">
+      <div id="project-gantt-view">
         <div class="gantt-full">${renderFullGantt()}</div>
       </div>
     </div>
@@ -1181,7 +1262,7 @@ function openProjectDetails(projectId) {
           name: values.projectName.trim(),
           service_category: values.serviceCategory,
           description: values.description.trim() || null,
-          budget: Number(values.budget),
+          budget: Number(values.projectValue),
           status: values.status,
           start_date: values.startDate || null,
           deadline: values.deadline || null,
@@ -1197,8 +1278,10 @@ function openProjectDetails(projectId) {
           clientId: values.clientId || null,
           serviceCategory: values.serviceCategory,
           description: values.description.trim(),
-          value: Number(values.budget),
           status: values.status,
+          progress: 0,
+          manager: getCurrentUser()?.name.split(' ')[0] || 'Founder',
+          value: Number(values.projectValue || 0),
           startDate: values.startDate,
           dueDate: values.deadline,
           notes: values.notes.trim()
@@ -1540,7 +1623,9 @@ function openModal(actionKey, existingRecord = null, defaults = {}) {
             clientId: values.clientId || null,
             serviceCategory: values.serviceCategory,
             description: values.description.trim(),
-            status: values.status, progress: 0, manager: founder,
+            status: values.status,
+            progress: 0,
+            manager: getCurrentUser()?.name.split(' ')[0] || 'Founder',
             value: Number(values.projectValue || 0),
             startDate: values.startDate,
             dueDate: values.deadline,
@@ -1877,141 +1962,3 @@ async function openAcceptanceWorkflow(inquiryId) {
     }
   };
 }
-
-function closeModal() {
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  if (!modalBackdrop) return;
-  modalBackdrop.classList.add('hidden');
-  modalBackdrop.setAttribute('aria-hidden', 'true');
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  if (!supabaseClient) {
-    setAuthMessage('Supabase is not configured. Update supabase-config.js before logging in.', 'error');
-    return;
-  }
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  if (!isFounderEmail(email)) {
-    setAuthMessage('This account is not authorized to use the Business Operating System.', 'error');
-    return;
-  }
-  const submitButton = document.querySelector('#login-form [type="submit"]');
-  submitButton.disabled = true;
-  try {
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      setAuthMessage(error.message, 'error');
-      return;
-    }
-    setAuthMessage('Login successful. Loading your BOS…', 'success');
-  } catch (error) {
-    setAuthMessage(`Could not sign in: ${error.message}`, 'error');
-  } finally {
-    submitButton.disabled = false;
-  }
-}
-
-async function logout() {
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) {
-    showAppError(`Could not log out: ${error.message}`);
-    return;
-  }
-  state.currentUser = null;
-  render();
-}
-
-function bindGlobalActions() {
-  const loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleLogin);
-  }
-
-  const logoutButton = document.getElementById('logout-btn');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', logout);
-  }
-
-  const brandDashboard = document.getElementById('brand-dashboard');
-  if (brandDashboard) {
-    brandDashboard.addEventListener('click', () => {
-      state.activeNav = 'dashboard';
-      saveState();
-      render();
-    });
-  }
-
-  const quickActionLaunch = document.getElementById('quick-action-launch');
-  if (quickActionLaunch) {
-    quickActionLaunch.addEventListener('click', () => openModal('create-project'));
-  }
-
-  const toggleContext = document.getElementById('toggle-context');
-  if (toggleContext) {
-    toggleContext.addEventListener('click', () => {
-      state.contextVisible = !state.contextVisible;
-      saveState();
-      render();
-    });
-  }
-
-  const collapseContext = document.getElementById('collapse-context');
-  if (collapseContext) {
-    collapseContext.addEventListener('click', () => {
-      state.contextVisible = false;
-      saveState();
-      render();
-    });
-  }
-
-  const closeModalButton = document.getElementById('close-modal');
-  if (closeModalButton) {
-    closeModalButton.addEventListener('click', closeModal);
-  }
-
-  const modalBackdrop = document.getElementById('modal-backdrop');
-  if (modalBackdrop) {
-    modalBackdrop.addEventListener('click', (event) => {
-      if (event.target === modalBackdrop) {
-        closeModal();
-      }
-    });
-  }
-}
-
-bindGlobalActions();
-render();
-
-let lastFocusRefresh = 0;
-function refreshBOSWhenVisible() {
-  if (document.visibilityState === 'hidden' || !getCurrentUser()) return;
-  if (Date.now() - lastFocusRefresh < 3000) return;
-  lastFocusRefresh = Date.now();
-  refreshBOSData();
-}
-
-window.addEventListener('focus', refreshBOSWhenVisible);
-document.addEventListener('visibilitychange', refreshBOSWhenVisible);
-
-async function initializeAuth() {
-  if (!supabaseClient) {
-    setAuthMessage('Set your Supabase project URL and anon key in supabase-config.js to enable sign-in.', 'error');
-    return;
-  }
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event !== 'INITIAL_SESSION') {
-      window.setTimeout(() => loadForSession(session), 0);
-    }
-  });
-  try {
-    const { data, error } = await supabaseClient.auth.getSession();
-    if (error) throw error;
-    await loadForSession(data.session);
-  } catch (error) {
-    setAuthMessage(`Could not check your Supabase session: ${error.message}`, 'error');
-  }
-}
-
-initializeAuth();

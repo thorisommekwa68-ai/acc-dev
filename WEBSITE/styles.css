@@ -1013,6 +1013,168 @@ td details p {
   white-space: pre-wrap;
 }
 
+.gantt-toolbar,
+.gantt-header,
+.gantt-project-row,
+.gantt-task-row {
+  display: grid;
+  grid-template-columns: 190px minmax(420px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.gantt-toolbar {
+  grid-template-columns: 1fr auto;
+  padding: 10px 0;
+}
+
+.gantt-view-title {
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.gantt-scale {
+  display: flex;
+  gap: 6px;
+}
+
+.gantt-scale button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 9px;
+  padding: .45rem .7rem;
+  cursor: pointer;
+}
+
+.gantt-scale button.active {
+  background: var(--navy);
+  color: #fff;
+}
+
+.gantt-scroll {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.gantt-canvas {
+  min-width: 760px;
+}
+
+.gantt-header {
+  min-height: 38px;
+  color: var(--muted);
+  font-size: .75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.gantt-project-row,
+.gantt-task-row {
+  min-height: 50px;
+  border-bottom: 1px solid var(--line);
+}
+
+.gantt-project-label,
+.gantt-task-label {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--navy);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.gantt-project-label strong,
+.gantt-project-label small,
+.gantt-task-label span,
+.gantt-task-label small {
+  display: block;
+}
+
+.gantt-project-label small,
+.gantt-task-label small {
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.gantt-task-label {
+  padding-left: 24px;
+}
+
+.gantt-task-row.selected {
+  background: rgba(54,185,200,.10);
+}
+
+.gantt-task-row.selected .gantt-task-label {
+  box-shadow: inset 3px 0 var(--cyan);
+}
+
+.gantt-track-large {
+  height: 28px;
+}
+
+.gantt-task-track {
+  height: 18px;
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 4px;
+  height: 20px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(7,27,51,.12);
+}
+
+.gantt-task-bar {
+  top: 2px;
+  height: 14px;
+}
+
+.gantt-bar>span {
+  display: block;
+  height: 100%;
+  background: rgba(255,255,255,.34);
+}
+
+.gantt-project-bar.active {
+  background: var(--cyan);
+}
+
+.gantt-project-bar.complete,
+.gantt-task-bar.complete {
+  background: var(--success);
+}
+
+.gantt-project-bar.overdue,
+.gantt-task-bar.overdue {
+  background: var(--danger);
+}
+
+.gantt-task-bar.active {
+  background: var(--cyan-strong);
+}
+
+.gantt-now {
+  position: absolute;
+  z-index: 3;
+  top: -5px;
+  width: 2px;
+  height: 38px;
+  background: #d99131;
+}
+
+.gantt-task-track .gantt-now {
+  height: 28px;
+}
+
+.gantt-task-bar {
+  top: 2px;
+  height: 14px;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 220px minmax(0, 1fr);
