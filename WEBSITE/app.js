@@ -37,27 +37,36 @@ const modalCatalog = {
   'create-project': {
     title: 'Create project',
     fields: [
-      { name: 'projectName', label: 'Project name', type: 'text', placeholder: 'New client project' },
-      { name: 'client', label: 'Client', type: 'text', placeholder: 'Client or business name' },
-      { name: 'projectValue', label: 'Contract value (ZAR)', type: 'number', placeholder: '45000' },
-      { name: 'status', label: 'Status', type: 'select', options: ['Planning', 'Not started', 'In progress', 'Awaiting client feedback'] }
+      { name: 'projectName', label: 'Project name', type: 'text', placeholder: 'New client project', required: true },
+      { name: 'clientId', label: 'Client', type: 'client-select' },
+      { name: 'serviceCategory', label: 'Service category', type: 'select', options: ['App Development', 'Website Development', 'Automation', 'Design and Branding', 'Graphic Design', 'Digital Services', 'Other'] },
+      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'projectValue', label: 'Budget (ZAR)', type: 'number', placeholder: '45000', min: '0', step: '0.01' },
+      { name: 'status', label: 'Status', type: 'select', options: ['Planning', 'Active', 'On hold', 'Completed', 'Cancelled'] },
+      { name: 'startDate', label: 'Start date', type: 'date' },
+      { name: 'deadline', label: 'Deadline', type: 'date' },
+      { name: 'notes', label: 'Notes', type: 'textarea' }
     ]
   },
   'create-task': {
     title: 'Create task',
     fields: [
-      { name: 'taskTitle', label: 'Task title', type: 'text', placeholder: 'Prepare discovery notes' },
+      { name: 'taskTitle', label: 'Task title', type: 'text', placeholder: 'Prepare discovery notes', required: true },
+      { name: 'projectId', label: 'Project', type: 'project-select' },
       { name: 'assignee', label: 'Assignee', type: 'select', options: ['Thoriso', 'Rorisang'] },
       { name: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Normal', 'High', 'Critical'] },
+      { name: 'status', label: 'Status', type: 'select', options: ['Not started', 'In progress', 'Blocked', 'Completed'] },
       { name: 'dueDate', label: 'Due date', type: 'date' }
     ]
   },
   'schedule-meeting': {
     title: 'Schedule meeting',
     fields: [
-      { name: 'meetingTitle', label: 'Meeting title', type: 'text', placeholder: 'Weekly project sync' },
-      { name: 'meetingDate', label: 'Date', type: 'date' },
-      { name: 'meetingTime', label: 'Time', type: 'time' },
+      { name: 'meetingTitle', label: 'Meeting title', type: 'text', placeholder: 'Weekly project sync', required: true },
+      { name: 'projectId', label: 'Project', type: 'project-select' },
+      { name: 'meetingDate', label: 'Date', type: 'date', required: true },
+      { name: 'meetingTime', label: 'Time', type: 'time', required: true },
+      { name: 'description', label: 'Agenda / notes', type: 'textarea' },
       { name: 'attendees', label: 'Attendees', type: 'text', placeholder: 'Thoriso, Rorisang' }
     ]
   },
@@ -243,6 +252,7 @@ async function loadBOSData() {
     supabaseClient.from('projects').select('*, client:clients(*)').order('created_at', { ascending: false }),
     supabaseClient.from('project_stages').select('*').order('position'),
     supabaseClient.from('tasks').select('*').order('due_date'),
+    supabaseClient.from('meetings').select('*').order('start_at'),
     supabaseClient.from('clients').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('invoices').select('*').order('issue_date', { ascending: false }),
     supabaseClient.from('payments').select('*').order('payment_date', { ascending: false }),
@@ -253,7 +263,7 @@ async function loadBOSData() {
   state.migrationRequired = !state.relationTablesAvailable;
 
   if (state.relationTablesAvailable) {
-    const [relEnquiries, relProjects, relStages, relTasks, relClients, relInvoices, relPayments, relExpenses] =
+    const [relEnquiries, relProjects, relStages, relTasks, relMeetings, relClients, relInvoices, relPayments, relExpenses] =
       relationalQueries.map((result) => result.value.data || []);
     state.enquiries = [
       ...relEnquiries.map((item) => ({
@@ -289,6 +299,7 @@ async function loadBOSData() {
       description: item.description,
       dueDate: item.deadline,
       startDate: item.start_date,
+      notes: item.notes,
       currency: item.currency
     }));
     state.stages = relStages;
@@ -304,6 +315,20 @@ async function loadBOSData() {
       description: item.description,
       notes: item.notes
     }));
+    state.meetings = relMeetings.map((item) => {
+      const localStart = toLocalDateTimeInputValue(item.start_at);
+      const [date, time] = localStart.split('T');
+      const meetingDetails = parseMeetingDescription(item.description);
+      return {
+        id: item.id,
+        projectId: item.project_id,
+        title: item.title,
+        date,
+        time,
+        attendees: meetingDetails.attendees,
+        description: meetingDetails.description
+      };
+    });
     state.clients = relClients.map((item) => ({
       id: item.id,
       businessName: item.business_name || item.name,
@@ -608,6 +633,21 @@ function getLocalDateKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function toLocalDateTimeInputValue(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function parseMeetingDescription(value) {
+  const description = String(value || '');
+  const attendeeLine = description.match(/^Attendees:\s*(.*)$/m);
+  return {
+    attendees: attendeeLine?.[1] ? attendeeLine[1].split(',').map((name) => name.trim()).filter(Boolean) : [],
+    description: attendeeLine ? description.replace(attendeeLine[0], '').trim() : description
+  };
+}
+
 function renderMyWorkspace() {
   const firstName = getCurrentUser()?.name.split(' ')[0];
   const myTasks = state.tasks.filter((task) => task.assignee === firstName);
@@ -833,6 +873,7 @@ function renderProjects() {
               <th>Status</th>
               <th>Progress</th>
               <th>Value</th>
+              <th>Manage</th>
             </tr>
           </thead>
           <tbody>
@@ -848,8 +889,9 @@ function renderProjects() {
                   <div class="progress-bar"><span class="progress-fill" style="width: ${project.progress}%"></span></div>
                 </td>
                 <td>${formatCurrency(project.value)}</td>
+                <td><button class="ghost-btn small-btn" type="button" data-open-project="${escapeHTML(project.id)}">Open</button></td>
               </tr>
-            `).join('') : '<tr><td colspan="7"><div class="empty-state">No projects yet. Accept an inquiry or create a project to begin.</div></td></tr>'}
+            `).join('') : '<tr><td colspan="8"><div class="empty-state">No projects yet. Accept an inquiry or create a project to begin.</div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -907,10 +949,10 @@ function renderCalendar() {
         ${state.meetings.map((meeting) => `
           <div class="calendar-item">
             <div>
-              <strong>${meeting.title}</strong>
-              <div class="muted-label">${meeting.date} • ${meeting.time}</div>
+              <strong>${escapeHTML(meeting.title)}</strong>
+              <div class="muted-label">${escapeHTML(meeting.date)} • ${escapeHTML(meeting.time)}</div>
             </div>
-            <span class="status-pill status-qualified">${meeting.attendees.length} attendees</span>
+            <span class="status-pill status-qualified">${(meeting.attendees || []).length} attendees</span>
           </div>
         `).join('')}
       </div>
@@ -1038,6 +1080,148 @@ function renderModulePlaceholder() {
   `;
 }
 
+function openProjectDetails(projectId) {
+  const project = state.projects.find((item) => String(item.id) === String(projectId));
+  if (!project) return;
+
+  const backdrop = document.getElementById('modal-backdrop');
+  const title = document.getElementById('modal-title');
+  const form = document.getElementById('modal-form');
+  const clientOptions = [
+    '<option value="">Unassigned client</option>',
+    ...state.clients.map((client) => `
+      <option value="${escapeHTML(client.id)}" ${String(client.id) === String(project.clientId || '') ? 'selected' : ''}>
+        ${escapeHTML(client.businessName || client.contactPerson || 'Client')}
+      </option>
+    `)
+  ].join('');
+  const categories = ['App Development', 'Website Development', 'Automation', 'Design and Branding', 'Graphic Design', 'Digital Services', 'Other'];
+  const statuses = ['Planning', 'Active', 'On hold', 'Completed', 'Cancelled'];
+  const projectTasks = state.tasks.filter((task) => String(task.projectId) === String(project.id));
+  const projectMeetings = state.meetings.filter((meeting) => String(meeting.projectId) === String(project.id));
+
+  title.textContent = `Manage project: ${project.name}`;
+  form.innerHTML = `
+    <div class="field-row">
+      <div class="field"><label for="project-name">Project name</label><input id="project-name" name="projectName" required maxlength="200" value="${escapeHTML(project.name)}" /></div>
+      <div class="field"><label for="project-client">Client</label><select id="project-client" name="clientId">${clientOptions}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="project-category">Service category</label><select id="project-category" name="serviceCategory">${categories.map((category) => `<option ${category === project.serviceCategory ? 'selected' : ''}>${category}</option>`).join('')}</select></div>
+      <div class="field"><label for="project-status">Status</label><select id="project-status" name="status">${statuses.map((status) => `<option ${status === project.status ? 'selected' : ''}>${status}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label for="project-description">Description</label><textarea id="project-description" name="description">${escapeHTML(project.description || '')}</textarea></div>
+    <div class="field-row">
+      <div class="field"><label for="project-budget">Budget (${escapeHTML(project.currency || 'ZAR')})</label><input id="project-budget" name="budget" type="number" min="0" step="0.01" required value="${escapeHTML(project.value ?? 0)}" /></div>
+      <div class="field"><label for="project-start-date">Start date</label><input id="project-start-date" name="startDate" type="date" value="${escapeHTML(project.startDate || '')}" /></div>
+      <div class="field"><label for="project-deadline">Deadline</label><input id="project-deadline" name="deadline" type="date" value="${escapeHTML(project.dueDate || '')}" /></div>
+    </div>
+    <div class="field"><label for="project-notes">Notes</label><textarea id="project-notes" name="notes">${escapeHTML(project.notes || '')}</textarea></div>
+    <section class="project-linked-records">
+      <div class="panel-header"><h4>Tasks</h4><button type="button" class="ghost-btn small-btn" id="add-project-task">Add task</button></div>
+      ${projectTasks.length ? `<div class="list-stack">${projectTasks.map((task) => `
+        <div class="list-item">
+          <div><strong>${escapeHTML(task.title)}</strong><div class="muted-label">${escapeHTML(task.status || 'Not started')} · Due ${escapeHTML(task.dueDate || 'Not set')}</div></div>
+          <button type="button" class="ghost-btn small-btn" data-edit-task="${escapeHTML(task.id)}">Edit</button>
+        </div>
+      `).join('')}</div>` : '<div class="empty-state">No tasks are linked to this project.</div>'}
+    </section>
+    <section class="project-linked-records">
+      <div class="panel-header"><h4>Meetings</h4><button type="button" class="ghost-btn small-btn" id="add-project-meeting">Schedule</button></div>
+      ${projectMeetings.length ? `<div class="list-stack">${projectMeetings.map((meeting) => `
+        <div class="list-item">
+          <div><strong>${escapeHTML(meeting.title)}</strong><div class="muted-label">${escapeHTML(meeting.date || '')} ${escapeHTML(meeting.time || '')}</div></div>
+          <button type="button" class="ghost-btn small-btn" data-edit-meeting="${escapeHTML(meeting.id)}">Edit</button>
+        </div>
+      `).join('')}</div>` : '<div class="empty-state">No meetings are linked to this project.</div>'}
+    </section>
+    <div class="form-actions">
+      <button type="button" class="ghost-btn small-btn" id="cancel-modal">Close</button>
+      <button type="submit" class="primary-btn small-btn">Save project</button>
+    </div>
+  `;
+  backdrop.classList.remove('hidden');
+  backdrop.setAttribute('aria-hidden', 'false');
+  document.getElementById('cancel-modal').addEventListener('click', closeModal);
+  document.getElementById('add-project-task').addEventListener('click', () => {
+    closeModal();
+    openModal('create-task', null, { projectId: project.id });
+  });
+  document.getElementById('add-project-meeting').addEventListener('click', () => {
+    closeModal();
+    openModal('schedule-meeting', null, { projectId: project.id });
+  });
+  form.querySelectorAll('[data-edit-task]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const task = projectTasks.find((item) => String(item.id) === button.dataset.editTask);
+      if (!task) return;
+      closeModal();
+      openModal('create-task', task);
+    });
+  });
+  form.querySelectorAll('[data-edit-meeting]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const meeting = projectMeetings.find((item) => String(item.id) === button.dataset.editMeeting);
+      if (!meeting) return;
+      closeModal();
+      openModal('schedule-meeting', meeting);
+    });
+  });
+
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector('[type="submit"]');
+    submit.disabled = true;
+    const values = Object.fromEntries(new FormData(form).entries());
+    const selectedClient = state.clients.find((client) => String(client.id) === String(values.clientId));
+    try {
+      if (state.relationTablesAvailable) {
+        const { data, error } = await supabaseClient.from('projects').update({
+          client_id: values.clientId || null,
+          name: values.projectName.trim(),
+          service_category: values.serviceCategory,
+          description: values.description.trim() || null,
+          budget: Number(values.budget),
+          status: values.status,
+          start_date: values.startDate || null,
+          deadline: values.deadline || null,
+          notes: values.notes.trim() || null
+        }).eq('id', project.id).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('Could not find the saved project to update.');
+      } else {
+        const updatedProject = {
+          ...project,
+          name: values.projectName.trim(),
+          client: selectedClient?.businessName || 'Unassigned client',
+          clientId: values.clientId || null,
+          serviceCategory: values.serviceCategory,
+          description: values.description.trim(),
+          value: Number(values.budget),
+          status: values.status,
+          startDate: values.startDate,
+          dueDate: values.deadline,
+          notes: values.notes.trim()
+        };
+        const { data, error } = await supabaseClient.from('bos_records')
+          .update({ data: updatedProject })
+          .eq('record_type', 'projects')
+          .eq('data->>id', project.id)
+          .select('id')
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('Could not find the saved project record to update.');
+      }
+      closeModal();
+      await loadBOSData();
+      render();
+    } catch (error) {
+      showAppError(`Could not update the project: ${error.message}`);
+      submit.disabled = false;
+    }
+  };
+}
+
 function openInquiryDetails(inquiryId) {
   const inquiry = state.enquiries.find((item) => String(item.id) === String(inquiryId));
   if (!inquiry) return;
@@ -1159,6 +1343,9 @@ function renderWorkspace() {
   document.querySelectorAll('[data-open-inquiry]').forEach((button) => {
     button.addEventListener('click', () => openInquiryDetails(button.dataset.openInquiry));
   });
+  document.querySelectorAll('[data-open-project]').forEach((button) => {
+    button.addEventListener('click', () => openProjectDetails(button.dataset.openProject));
+  });
   document.querySelectorAll('[data-accept-inquiry]').forEach((button) => {
     button.addEventListener('click', () => openAcceptanceWorkflow(button.dataset.acceptInquiry));
   });
@@ -1236,25 +1423,64 @@ function render() {
   showAppError(state.errorMessage);
 };
 
-function openModal(actionKey) {
+function openModal(actionKey, existingRecord = null, defaults = {}) {
   const modalBackdrop = document.getElementById('modal-backdrop');
   const modalTitle = document.getElementById('modal-title');
   const modalForm = document.getElementById('modal-form');
   const definition = modalCatalog[actionKey];
   if (!modalBackdrop || !definition) return;
 
-  modalTitle.textContent = definition.title;
+  const isEditing = Boolean(existingRecord?.id);
+  const values = {
+    ...defaults,
+    ...(actionKey === 'create-project' ? {
+      projectName: existingRecord?.name,
+      clientId: existingRecord?.clientId,
+      serviceCategory: existingRecord?.serviceCategory,
+      description: existingRecord?.description,
+      projectValue: existingRecord?.value,
+      status: existingRecord?.status,
+      startDate: existingRecord?.startDate,
+      deadline: existingRecord?.dueDate,
+      notes: existingRecord?.notes
+    } : {}),
+    ...(actionKey === 'create-task' ? {
+      taskTitle: existingRecord?.title,
+      projectId: existingRecord?.projectId,
+      assignee: existingRecord?.assignee === 'Rorisang' ? 'Rorisang' : 'Thoriso',
+      priority: existingRecord?.priority === 'Urgent' ? 'Critical' : existingRecord?.priority === 'Medium' ? 'Normal' : existingRecord?.priority,
+      status: existingRecord?.status === 'To do' ? 'Not started' : existingRecord?.status,
+      dueDate: existingRecord?.dueDate
+    } : {}),
+    ...(actionKey === 'schedule-meeting' ? {
+      meetingTitle: existingRecord?.title,
+      projectId: existingRecord?.projectId,
+      meetingDate: existingRecord?.date,
+      meetingTime: existingRecord?.time,
+      description: existingRecord?.description,
+      attendees: existingRecord?.attendees?.join(', ')
+    } : {})
+  };
+  modalTitle.textContent = isEditing ? `Edit ${definition.title.toLowerCase()}` : definition.title;
   modalForm.innerHTML = `
     ${definition.fields.map((field) => {
+      const value = values[field.name] ?? '';
+      const required = field.required ? ' required' : '';
       const fieldContent = field.type === 'textarea'
-        ? `<textarea name="${field.name}" placeholder="${field.placeholder || ''}"></textarea>`
-        : field.type === 'select'
-          ? `<select name="${field.name}">${field.options.map((option) => `<option value="${option}">${option}</option>`).join('')}</select>`
-          : `<input type="${field.type}" name="${field.name}" placeholder="${field.placeholder || ''}" />`;
+        ? `<textarea name="${field.name}" placeholder="${escapeHTML(field.placeholder || '')}"${required}>${escapeHTML(value)}</textarea>`
+        : field.type === 'select' || field.type === 'project-select' || field.type === 'client-select'
+          ? `<select name="${field.name}"${required}>${
+            field.type === 'project-select'
+              ? `<option value="">No project</option>${state.projects.map((project) => `<option value="${escapeHTML(project.id)}" ${String(project.id) === String(value) ? 'selected' : ''}>${escapeHTML(project.name)}</option>`).join('')}`
+              : field.type === 'client-select'
+                ? `<option value="">Unassigned client</option>${state.clients.map((client) => `<option value="${escapeHTML(client.id)}" ${String(client.id) === String(value) ? 'selected' : ''}>${escapeHTML(client.businessName || client.contactPerson || 'Client')}</option>`).join('')}`
+                : field.options.map((option) => `<option value="${escapeHTML(option)}" ${option === value ? 'selected' : ''}>${escapeHTML(option)}</option>`).join('')
+          }</select>`
+          : `<input type="${field.type}" name="${field.name}" placeholder="${escapeHTML(field.placeholder || '')}" value="${escapeHTML(value)}"${field.min ? ` min="${field.min}"` : ''}${field.step ? ` step="${field.step}"` : ''}${required} />`;
 
       return `
         <div class="field">
-          <label>${field.label}</label>
+          <label>${escapeHTML(field.label)}</label>
           ${fieldContent}
         </div>
       `;
@@ -1269,9 +1495,8 @@ function openModal(actionKey) {
   modalBackdrop.setAttribute('aria-hidden', 'false');
 
   document.getElementById('cancel-modal').addEventListener('click', () => closeModal());
-  document.getElementById('close-modal').addEventListener('click', () => closeModal());
 
-  modalForm.addEventListener('submit', async (event) => {
+  modalForm.onsubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(modalForm);
     const values = Object.fromEntries(formData.entries());
@@ -1290,13 +1515,17 @@ function openModal(actionKey) {
             const projectReference = `PRJ-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
             const { error: projectError } = await supabaseClient.from('projects').insert({
               business_id: businessId,
-              name: values.projectName,
+              client_id: values.clientId || null,
+              name: values.projectName.trim(),
               reference: projectReference,
-              service_category: 'Other',
+              service_category: values.serviceCategory,
+              description: values.description.trim() || null,
               budget: Number(values.projectValue || 0),
               currency: 'ZAR',
-              status: values.status === 'In progress' ? 'Active' : 'Planning',
-              deadline: null
+              status: values.status,
+              start_date: values.startDate || null,
+              deadline: values.deadline || null,
+              notes: values.notes.trim() || null
             });
             if (projectError) throw projectError;
             closeModal();
@@ -1304,25 +1533,35 @@ function openModal(actionKey) {
             render();
             return;
           }
+          const projectClient = state.clients.find((client) => String(client.id) === String(values.clientId));
           recordType = 'projects';
           record = {
-            id, name: values.projectName, client: values.client,
-            status: values.status, progress: 10, manager: founder,
+            id, name: values.projectName.trim(), client: projectClient?.businessName || 'Unassigned client',
+            clientId: values.clientId || null,
+            serviceCategory: values.serviceCategory,
+            description: values.description.trim(),
+            status: values.status, progress: 0, manager: founder,
             value: Number(values.projectValue || 0),
-            dueDate: new Date(Date.now() + 1200000000).toISOString().slice(0, 10)
+            startDate: values.startDate,
+            dueDate: values.deadline,
+            notes: values.notes.trim()
           };
           break;
         case 'create-task':
           if (state.relationTablesAvailable) {
             const businessId = await getCurrentBusinessId();
-            const { error: taskError } = await supabaseClient.from('tasks').insert({
-              business_id: businessId,
+            const taskPayload = {
+              project_id: values.projectId || null,
               title: values.taskTitle,
               due_date: values.dueDate || null,
-              status: 'Not started',
+              status: values.status,
               priority: values.priority === 'Normal' ? 'Medium' : values.priority === 'Critical' ? 'Urgent' : values.priority
-            });
+            };
+            const { data: savedTask, error: taskError } = isEditing
+              ? await supabaseClient.from('tasks').update(taskPayload).eq('id', existingRecord.id).select('id').maybeSingle()
+              : await supabaseClient.from('tasks').insert({ ...taskPayload, business_id: businessId });
             if (taskError) throw taskError;
+            if (isEditing && !savedTask) throw new Error('Could not find the saved task to update.');
             closeModal();
             await loadBOSData();
             render();
@@ -1330,17 +1569,44 @@ function openModal(actionKey) {
           }
           recordType = 'tasks';
           record = {
-            id, title: values.taskTitle, projectId: '',
+            id: existingRecord?.id || id,
+            title: values.taskTitle.trim(),
+            projectId: values.projectId || '',
             assignee: values.assignee, priority: values.priority,
-            status: 'To do', dueDate: values.dueDate
+            status: values.status, dueDate: values.dueDate
           };
           break;
         case 'schedule-meeting':
+          const meetingStart = new Date(`${values.meetingDate}T${values.meetingTime}`).toISOString();
+          const attendeeNames = values.attendees.split(',').map((item) => item.trim()).filter(Boolean);
+          if (state.relationTablesAvailable) {
+            const businessId = await getCurrentBusinessId();
+            const meetingPayload = {
+              project_id: values.projectId || null,
+              title: values.meetingTitle.trim(),
+              start_at: meetingStart,
+              description: [
+                values.description.trim(),
+                attendeeNames.length ? `Attendees: ${attendeeNames.join(', ')}` : ''
+              ].filter(Boolean).join('\n\n') || null
+            };
+            const { data: savedMeeting, error: meetingError } = isEditing
+              ? await supabaseClient.from('meetings').update(meetingPayload).eq('id', existingRecord.id).select('id').maybeSingle()
+              : await supabaseClient.from('meetings').insert({ ...meetingPayload, business_id: businessId });
+            if (meetingError) throw meetingError;
+            if (isEditing && !savedMeeting) throw new Error('Could not find the saved meeting to update.');
+            closeModal();
+            await loadBOSData();
+            render();
+            return;
+          }
           recordType = 'meetings';
           record = {
-            id, title: values.meetingTitle, date: values.meetingDate,
+            id: existingRecord?.id || id,
+            projectId: values.projectId || '',
+            title: values.meetingTitle.trim(), date: values.meetingDate,
             time: values.meetingTime,
-            attendees: values.attendees.split(',').map((item) => item.trim()).filter(Boolean)
+            attendees: attendeeNames
           };
           break;
         case 'add-client':
@@ -1482,26 +1748,27 @@ function openModal(actionKey) {
           return;
       }
 
-      await addBOSRecord(recordType, record);
-      if (recordType === 'projects') state.projects.push(record);
-      if (recordType === 'tasks') state.tasks.push(record);
-      if (recordType === 'meetings') state.meetings.push(record);
-      if (recordType === 'clients') state.clients.push(record);
-      if (recordType === 'enquiries') state.enquiries.push(record);
-      if (recordType === 'messages') state.messages.push(record);
-      if (recordType === 'financial_transactions') {
-        if (record.kind === 'payment') state.finances.paymentsReceived += record.amount;
-        if (record.kind === 'expense') state.finances.expenses += record.amount;
-        state.finances.netCashPosition = state.finances.paymentsReceived - state.finances.expenses;
+      if (isEditing) {
+        const { data, error } = await supabaseClient.from('bos_records')
+          .update({ data: record })
+          .eq('record_type', recordType)
+          .eq('data->>id', existingRecord.id)
+          .select('id')
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('Could not find the saved record to update.');
+      } else {
+        await addBOSRecord(recordType, record);
       }
       showAppError();
       closeModal();
+      await loadBOSData();
       render();
     } catch (error) {
       showAppError(`Could not save this item: ${error.message}`);
       submitButton.disabled = false;
     }
-  });
+  };
 }
 
 async function openAcceptanceWorkflow(inquiryId) {

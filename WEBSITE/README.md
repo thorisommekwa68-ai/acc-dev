@@ -21,9 +21,11 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the audited baseline data model and
 6. Disable public sign-ups in the Supabase Auth provider settings; create BOS users manually.
 7. In **Authentication → URL Configuration**, set the production site URL and add the Cloudflare Pages domain (and any custom domain) to the allowed redirect URLs.
 
-The migration allows anyone to submit a service enquiry but restricts enquiry reads and BOS data to the two founder email addresses above. Do not remove the RLS policies or expose a service-role key.
+The migration allows anyone to submit a service enquiry but restricts enquiry reads and BOS data to the two founder email addresses above. The public form uses the configured Supabase publishable key; it must not be blocked based on its project URL or key value. Do not remove the RLS policies or expose a service-role key.
 
 If a public enquiry does not appear in Supabase, confirm migration `202611180001_initial_schema.sql` has been run and that the form displays its success confirmation. A failed insert displays the Supabase error in the form instead; migration `202611180003_fix_membership_rls_helper.sql` does not create or grant access to `intake_requests`.
+
+The Project Logging view supports multiple projects. Open a project to update its name, client, category, budget, status, description, dates and notes, or add and edit project-linked tasks and meetings.
 
 ## Deploy with Cloudflare Pages
 

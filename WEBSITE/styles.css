@@ -667,10 +667,22 @@ td details p {
 
 .modal-card {
   width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: white;
   border-radius: 18px;
   padding: 20px;
   box-shadow: var(--shadow);
+}
+
+.project-linked-records {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.project-linked-records h4 {
+  margin: 0;
+  color: var(--navy);
 }
 
 .modal-header {

@@ -12,7 +12,7 @@ The original app is static HTML/CSS/vanilla JavaScript using Supabase Auth and t
 
 - Responsive branded dashboard and founder Supabase authentication.
 - Inquiry filters/details and an acceptance workflow that creates a project through a database function.
-- Project list and schedule/Gantt views.
+- Multi-project list and schedule/Gantt views, editable project budgets and timelines, and project-linked task and meeting management.
 - Client directory and financial records views.
 - Relational tables are used when migration 002 is applied; the app retains a legacy-data fallback when they are unavailable.
 
