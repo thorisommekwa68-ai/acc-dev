@@ -2,7 +2,7 @@
 
 ## Active dashboard
 
-`index.html` now serves the current BOS dashboard, with Inquiries, Project Logging, Clients, and Finances navigation. The older dashboard markup is no longer the active entry page.
+`index.html` serves the BOS with Home, Projects, CRM, and Finances navigation. Home is the landing view and its scrollable carousel shows upcoming meetings, tasks, and recent activity. The former right-side context panel has been removed.
 
 ## Baseline audit
 
@@ -11,13 +11,13 @@ The original app is static HTML/CSS/vanilla JavaScript using Supabase Auth and t
 ## Current functionality
 
 - Responsive branded dashboard and founder Supabase authentication.
-- Inquiry filters/details and an acceptance workflow that creates a project through a database function.
-- Multi-project list and schedule/Gantt views, editable project budgets and timelines, and project-linked task and meeting management.
-- Client directory and financial records views.
+- CRM filters for customers and prospects, client details, relationship type, and service grouping.
+- Project workspaces with five 20%-weighted design tasks, Gantt/list views, four task progress states, project meetings, and project history.
+- Financial trend and service-revenue summaries, alongside payment and expense records.
 - Relational tables are used when migration 002 is applied; the app retains a legacy-data fallback when they are unavailable.
 
 ## Validation and deployment
 
-JavaScript syntax and Git whitespace checks pass. Live Supabase workflows, migration verification in staging, and responsive browser testing remain to be completed.
+JavaScript syntax, HTML/CSS structure, weighted-progress smoke tests, and Git whitespace checks pass. Apply migration `202611220001_design_project_workflow.sql` after the existing project foundation migration to enable persistent five-task progress. Live Supabase workflows, migration verification in staging, and responsive browser testing remain to be completed.
 
 Keep founder authentication restrictions, RLS policies, the shared public-site config, and the public enquiry flow intact. The relational migrations are additive and must not overwrite or delete existing records.

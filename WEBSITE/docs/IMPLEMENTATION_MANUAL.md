@@ -2,15 +2,9 @@
 
 ## 1. Review and apply the database migration
 
-1. Open `WEBSITE/supabase/migrations/202611180002_bos_relational_redesign.sql`.
-2. Review the complete SQL.
-3. Open the Supabase project dashboard.
-4. Choose **SQL Editor**.
-5. Create a new query.
-6. Copy the complete migration file and paste it into the editor.
-7. Click **Run**.
-8. Do not run it in production until a staging test has passed.
-9. Run `202611180003_fix_membership_rls_helper.sql` after migration 002. It is safe to run whether migration 002 is newly applied or was already applied.
+1. Review and apply the migrations in order: `202611180002_bos_relational_redesign.sql`, `202611180003_fix_membership_rls_helper.sql`, `202611210001_accept_intake_inquiries.sql`, `202611210002_project_management_foundation.sql`, then `202611220001_design_project_workflow.sql`.
+2. Open each migration in the Supabase project dashboard under **SQL Editor**, run them in the stated order, and review the result before continuing.
+3. Test the final project workflow migration in staging before production. It retains existing projects and normalizes their stages to Research, Research Reporting, Ideation, Prototyping, and Test and Review at 20% each.
 
 Confirm the new tables under **Table Editor**. Confirm RLS is enabled on each business-owned table and confirm policies are visible under the table policy view.
 
@@ -70,4 +64,5 @@ Do not drop database tables as rollback. Preserve relational records and restore
 - **No active business membership:** confirm the Supabase user exists in `business_members`.
 - **RLS blocks access:** confirm active status and role permissions.
 - **Inquiry acceptance is blocked:** confirm an active membership and apply the migration.
+- **Project tasks cannot be updated:** apply `202611220001_design_project_workflow.sql` after the project management foundation migration.
 - **Public form fails:** preserve the original `intake_requests` insert policy and publishable key.

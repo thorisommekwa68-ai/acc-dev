@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script defer src="app.js?v=20261121-login-fix"></script>
+    <script defer src="app.js?v=20261122-home-project-workflow"></script>
   </head>
   <body>
     <div id="auth-screen" class="auth-screen">
@@ -55,6 +55,7 @@
               <small>BOS</small>
             </div>
           </button>
+          <div id="sidebar-clock" class="sidebar-clock" aria-label="South African Standard Time"></div>
           <div id="sidebar-profile" class="sidebar-profile"></div>
         </div>
 
@@ -75,14 +76,6 @@
 
         <div id="workspace-content" class="workspace-content"></div>
       </main>
-
-      <aside id="context-panel" class="context-panel">
-        <div class="panel-header">
-          <h3>Context</h3>
-          <button class="ghost-btn small-btn" type="button" id="collapse-context">Hide</button>
-        </div>
-        <div id="context-content"></div>
-      </aside>
     </div>
 
     <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
