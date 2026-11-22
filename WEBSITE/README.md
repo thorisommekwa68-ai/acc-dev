@@ -14,7 +14,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the audited baseline data model and
 1. Create a Supabase project.
 2. In **Project Settings → API**, copy the project URL and the **publishable** key (or legacy anon/public key) into `supabase-config.js`. Never put a secret or `service_role` key in this website.
 3. If this project has not yet been initialized, run `supabase/migrations/202611180001_initial_schema.sql`.
-4. To enable the current relational BOS workflows, first test and then run `supabase/migrations/202611180002_bos_relational_redesign.sql`, followed by `supabase/migrations/202611180003_fix_membership_rls_helper.sql` and `supabase/migrations/202611210001_accept_intake_inquiries.sql`. These migrations preserve the existing intake and legacy BOS tables; do not run against production without review and a backup.
+4. To enable the current relational BOS workflows, first test and then run, in order, `supabase/migrations/202611180002_bos_relational_redesign.sql`, `supabase/migrations/202611180003_fix_membership_rls_helper.sql`, `supabase/migrations/202611210001_accept_intake_inquiries.sql`, and `supabase/migrations/202611210002_project_management_foundation.sql`. These migrations preserve the existing intake and legacy BOS tables; do not run against production without review and a backup.
 5. Create and confirm the two founder users in **Authentication → Users**:
    - `thorisommekwa68@gmail.com`
    - `dkdrougs@gmail.com`

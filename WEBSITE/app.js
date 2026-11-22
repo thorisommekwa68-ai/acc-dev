@@ -18,7 +18,8 @@ const supabaseConfigured = Boolean(
   supabaseConfig?.url &&
   supabaseConfig?.publishableKey &&
   !supabaseConfig.url.includes('YOUR_PROJECT_ID') &&
-  !supabaseConfig.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY')
+  !supabaseConfig.publishableKey.includes('YOUR_SUPABASE_PUBLISHABLE_KEY') &&
+  typeof window.supabase?.createClient === 'function'
 );
 const supabaseClient = supabaseConfigured
   ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.publishableKey)
@@ -29,7 +30,7 @@ const navDefinitions = [
   { key: 'clients', label: 'Clients', icon: 'users', group: 'Operational navigation' },
   { key: 'finances', label: 'Finances', icon: 'wallet', group: 'Operational navigation' }
 ];
-if (!navDefinitions.some((item) => item.key === state.activeNav)) {
+if (state.activeNav !== 'dashboard' && !navDefinitions.some((item) => item.key === state.activeNav)) {
   state.activeNav = 'inquiries';
 }
 
@@ -1262,7 +1263,7 @@ function openProjectDetails(projectId) {
           name: values.projectName.trim(),
           service_category: values.serviceCategory,
           description: values.description.trim() || null,
-          budget: Number(values.projectValue),
+          budget: Number(values.budget),
           status: values.status,
           start_date: values.startDate || null,
           deadline: values.deadline || null,
@@ -1281,7 +1282,7 @@ function openProjectDetails(projectId) {
           status: values.status,
           progress: 0,
           manager: getCurrentUser()?.name.split(' ')[0] || 'Founder',
-          value: Number(values.projectValue || 0),
+          value: Number(values.budget || 0),
           startDate: values.startDate,
           dueDate: values.deadline,
           notes: values.notes.trim()
@@ -1962,3 +1963,95 @@ async function openAcceptanceWorkflow(inquiryId) {
     }
   };
 }
+
+function closeModal() {
+  const modalBackdrop = document.getElementById('modal-backdrop');
+  if (!modalBackdrop) return;
+  modalBackdrop.classList.add('hidden');
+  modalBackdrop.setAttribute('aria-hidden', 'true');
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthMessage('Supabase is unavailable. Check the project URL, publishable key, and Supabase client script.', 'error');
+    return;
+  }
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!isFounderEmail(email)) {
+    setAuthMessage('This account is not authorized to use the Business Operating System.', 'error');
+    return;
+  }
+
+  const submitButton = document.querySelector('#login-form [type="submit"]');
+  submitButton.disabled = true;
+  setAuthMessage('Signing in…', 'info');
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    setAuthMessage('Login successful. Loading your BOS…', 'success');
+  } catch (error) {
+    setAuthMessage(`Could not sign in: ${error.message}`, 'error');
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+async function logout() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    showAppError(`Could not log out: ${error.message}`);
+    return;
+  }
+  state.currentUser = null;
+  render();
+}
+
+function bindGlobalActions() {
+  document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+  document.getElementById('logout-btn')?.addEventListener('click', logout);
+  document.getElementById('brand-dashboard')?.addEventListener('click', () => {
+    state.activeNav = 'dashboard';
+    saveState();
+    render();
+  });
+  document.getElementById('close-modal')?.addEventListener('click', closeModal);
+  document.getElementById('modal-backdrop')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) closeModal();
+  });
+}
+
+function refreshBOSWhenVisible() {
+  if (document.visibilityState === 'hidden' || !getCurrentUser()) return;
+  refreshBOSData();
+}
+
+async function initializeAuth() {
+  if (!supabaseClient) {
+    setAuthMessage('Supabase is not configured. Check supabase-config.js and the Supabase client script.', 'error');
+    return;
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event !== 'INITIAL_SESSION') {
+      window.setTimeout(() => loadForSession(session), 0);
+    }
+  });
+
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    await loadForSession(data.session);
+  } catch (error) {
+    setAuthMessage(`Could not check your Supabase session: ${error.message}`, 'error');
+  }
+}
+
+bindGlobalActions();
+render();
+window.addEventListener('focus', refreshBOSWhenVisible);
+document.addEventListener('visibilitychange', refreshBOSWhenVisible);
+initializeAuth();
