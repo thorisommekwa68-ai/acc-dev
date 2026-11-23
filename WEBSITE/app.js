@@ -78,7 +78,7 @@ const modalCatalog = {
       { name: 'businessName', label: 'Business name', type: 'text', placeholder: 'Greenline Trading' },
       { name: 'contactPerson', label: 'Contact person', type: 'text', placeholder: 'Lerato' },
       { name: 'email', label: 'Email', type: 'email', placeholder: 'hello@company.co.za' },
-      { name: 'telephone', label: 'Telephone', type: 'tel', placeholder: '+27 00 000 0000' },
+      { name: 'telephone', label: 'Telephone', type: 'tel', placeholder: '+27 00 000 0000', required: true },
       { name: 'industry', label: 'Industry', type: 'text', placeholder: 'Professional services' }
     ]
   },
@@ -118,7 +118,7 @@ const modalCatalog = {
     fields: [
       { name: 'contactName', label: 'Client or contact name', type: 'text', placeholder: 'Client name' },
       { name: 'email', label: 'Email', type: 'email', placeholder: 'client@example.com' },
-      { name: 'telephone', label: 'Telephone', type: 'text', placeholder: 'Phone number' },
+      { name: 'telephone', label: 'Telephone', type: 'tel', placeholder: '+27 00 000 0000', required: true },
       { name: 'requestedService', label: 'Requested service', type: 'select', options: ['App Development','Website Development','Automation','Design and Branding','Graphic Design','Digital Services','Other'] },
       { name: 'description', label: 'Inquiry details', type: 'textarea', placeholder: 'Describe the request' }
     ]
@@ -566,6 +566,14 @@ function escapeHTML(value) {
   })[character]);
 }
 
+function renderTelephone(phone, fallback = 'Not provided') {
+  const value = String(phone ?? '').trim();
+  if (!value) return escapeHTML(fallback);
+  const number = value.replace(/[^\d+]/g, '');
+  if (!/\d/.test(number)) return escapeHTML(fallback);
+  return `<a href="tel:${escapeHTML(number)}">${escapeHTML(value)}</a>`;
+}
+
 function getPageTitle() {
   const label = navDefinitions.find((item) => item.key === state.activeNav)?.label || 'Home';
   document.getElementById('page-title').textContent = label;
@@ -996,7 +1004,7 @@ function renderCRM() {
         <div class="kpi-card"><span class="kpi-label">Recurring customers</span><span class="kpi-value">${state.clients.filter((client) => ['Recurring', 'Subscription'].includes(client.clientType)).length}</span></div>
       </div>
       <div class="toolbar">
-        <input id="crm-search" type="search" placeholder="Search name, contact, email or service" />
+        <input id="crm-search" type="search" placeholder="Search name, contact, email, phone or service" />
         <select id="crm-filter"><option value="">All contacts</option><option value="customer">Customers only</option><option value="potential">Potential customers only</option></select>
       </div>
       <div class="table-wrap">
@@ -1019,9 +1027,10 @@ function renderCRM() {
               const spent = client ? customerSpend(client) : 0;
               const name = client?.businessName || enquiry.client || enquiry.contactName || 'Unknown';
               const contact = client?.contactPerson || enquiry.contactName || name;
-              return `<tr data-crm-row data-crm-kind="${kind}" data-crm-search="${escapeHTML(`${name} ${contact} ${record.email || ''} ${serviceNames}`)}">
+              const phone = client?.phone || client?.telephone || enquiry?.phone || enquiry?.telephone || '';
+              return `<tr data-crm-row data-crm-kind="${kind}" data-crm-search="${escapeHTML(`${name} ${contact} ${record.email || ''} ${phone} ${serviceNames}`)}">
                 <td><strong>${escapeHTML(name)}</strong><br><span class="muted-label">${escapeHTML(kind === 'customer' ? client.status || 'Active' : enquiry.status || 'New')}</span></td>
-                <td>${escapeHTML(contact)}<br><a class="muted-label" href="mailto:${escapeHTML(record.email || '')}">${escapeHTML(record.email || 'No email')}</a><br><span class="muted-label">${escapeHTML(client?.phone || enquiry?.phone || 'No phone')}</span></td>
+                <td>${escapeHTML(contact)}<br>${record.email ? `<a class="muted-label" href="mailto:${escapeHTML(record.email)}">${escapeHTML(record.email)}</a>` : '<span class="muted-label">No email</span>'}<br>${renderTelephone(phone, 'No phone')}</td>
                 <td>${escapeHTML(serviceNames)}</td>
                 <td>${kind === 'customer' ? escapeHTML(client.clientType || 'One-off') : 'Potential'}</td>
                 <td>${kind === 'customer' ? formatCurrency(spent) : '—'}</td>
@@ -1649,7 +1658,7 @@ function openClientDetails(clientId) {
     <dl class="detail-list">
       <dt>Contact</dt><dd>${escapeHTML(client.contactPerson || 'Not set')}</dd>
       <dt>Email</dt><dd>${client.email ? `<a href="mailto:${escapeHTML(client.email)}">${escapeHTML(client.email)}</a>` : 'Not set'}</dd>
-      <dt>Telephone</dt><dd>${escapeHTML(client.phone || 'Not set')}</dd>
+      <dt>Telephone</dt><dd>${renderTelephone(client.phone || client.telephone, 'Not set')}</dd>
       <dt>Location</dt><dd>${escapeHTML(client.location || 'Not set')}</dd>
       <dt>Industry</dt><dd>${escapeHTML(client.industry || 'Not set')}</dd>
       <dt>Total paid</dt><dd><strong>${formatCurrency(paid)}</strong></dd>
@@ -1728,7 +1737,7 @@ function openInquiryDetails(inquiryId) {
       <dt>Reference</dt><dd>${escapeHTML(inquiry.reference || String(inquiry.id).slice(0, 8).toUpperCase())}</dd>
       <dt>Client / contact</dt><dd>${escapeHTML(inquiry.client || inquiry.contactName || 'Unknown')}</dd>
       <dt>Email</dt><dd>${escapeHTML(inquiry.email || 'Not provided')}</dd>
-      <dt>Telephone</dt><dd>${escapeHTML(inquiry.phone || 'Not provided')}</dd>
+      <dt>Telephone</dt><dd>${renderTelephone(inquiry.phone || inquiry.telephone)}</dd>
       <dt>Requested service</dt><dd>${escapeHTML(inquiry.requestedService || inquiry.services?.join(', ') || 'General enquiry')}</dd>
       <dt>Source</dt><dd>${escapeHTML(inquiry.source || 'Unknown')}</dd>
       <dt>Received</dt><dd>${escapeHTML(inquiry.date || inquiry.receivedAt || 'Unknown')}</dd>
@@ -2334,6 +2343,7 @@ async function openAcceptanceWorkflow(inquiryId) {
     <div class="acceptance-summary">
       <strong>${escapeHTML(inquiry.client || inquiry.contactName || 'Client')}</strong>
       <span class="muted-label">${escapeHTML(inquiry.requestedService || inquiry.services?.join(', ') || 'General enquiry')}</span>
+      <span class="muted-label">Email: ${inquiry.email ? `<a href="mailto:${escapeHTML(inquiry.email)}">${escapeHTML(inquiry.email)}</a>` : 'Not provided'} · Telephone: ${renderTelephone(inquiry.phone || inquiry.telephone)}</span>
     </div>
     <div class="field-row">
       <div class="field"><label>Project name</label><input name="projectName" required value="${escapeHTML(`${inquiry.client || inquiry.contactName || 'New'} project`)}" /></div>
@@ -2384,7 +2394,7 @@ async function openAcceptanceWorkflow(inquiryId) {
               name: inquiry.contactName || inquiry.client || 'Unknown contact',
               business_name: inquiry.client || inquiry.contactName || null,
               email: inquiry.email || null,
-              telephone: inquiry.phone || null,
+              telephone: inquiry.phone || inquiry.telephone || null,
               status: 'Active',
               acquisition_source: inquiry.source || 'Inquiry'
             })

@@ -58,7 +58,7 @@ contactForm?.addEventListener('submit', async (event) => {
   if (!contactForm.reportValidity()) return;
 
   if (!configured) {
-    setFormStatus(contactStatus, 'This form is not connected. Please contact us by email.', 'error');
+    setFormStatus(contactStatus, 'This form is not connected. Please contact us by email or telephone on 061 369 1295.', 'error');
     return;
   }
 
@@ -67,6 +67,7 @@ contactForm?.addEventListener('submit', async (event) => {
     kind: 'contact',
     name: (raw.name || '').trim().slice(0, 160),
     email: (raw.email || '').trim().slice(0, 320),
+    phone: (raw.phone || '').trim().slice(0, 40),
     subject: (raw.subject || '').trim().slice(0, 300),
     category: raw.category || 'Other',
     message: (raw.message || '').trim().slice(0, 10000)

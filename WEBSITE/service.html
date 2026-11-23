@@ -763,10 +763,12 @@
           <div class="contact-card">
             <h3>General Email</h3>
             <p><a href="mailto:thorisommekwa68@gmail.com">thorisommekwa68@gmail.com</a></p>
+            <p><strong>Business telephone:</strong> <a href="tel:+27613691295">061 369 1295</a></p>
           </div>
           <div class="contact-card">
             <h3>Technical / Software Enquiries</h3>
             <p><a href="mailto:dkdrougs@gmail.com">dkdrougs@gmail.com</a></p>
+            <p><strong>Business telephone:</strong> <a href="tel:+27613691295">061 369 1295</a></p>
           </div>
         </div>
       </div>
@@ -790,6 +792,10 @@
             <div class="field">
               <label for="contact-email">Email address</label>
               <input id="contact-email" name="email" type="email" maxlength="320" required />
+            </div>
+            <div class="field">
+              <label for="contact-phone">Telephone</label>
+              <input id="contact-phone" name="phone" type="tel" autocomplete="tel" maxlength="40" placeholder="+27 00 000 0000" required />
             </div>
             <div class="field full">
               <label for="contact-subject">Subject</label>
@@ -830,7 +836,7 @@
     </dialog>
 
     <script src="/supabase-config.js?v=bc7d4c7"></script>
-    <script src="/service.js?v=20261121-rest"></script>
+    <script src="/service.js?v=20261123-contact-telephone"></script>
     <script>
       const enquiryFormStartupCheck = document.getElementById('contact-form');
       if (enquiryFormStartupCheck && enquiryFormStartupCheck.dataset.submitHandlerReady !== 'true') {
